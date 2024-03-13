@@ -1,0 +1,132 @@
+1)¿Por qué se prefiere emular una CPU en vez de utilizar directamente la CPU existente?
+	
+	Se prefiere emular una CPU en vez de utilizar directamente la CPU existente ya que permite un mayor
+	control sobre los procesos que se ejecutan pudiendo depurar de forma mas profunda cada uno de estos.
+
+2)¿Cuánta memoria tiene la máquina simulada para Nachos?
+	
+	PAGE_SIZE = SECTOR_SIZE = 128
+	DEFAUL_NUM_PHYS_PAGES = 32
+	MEMORY_SIZE = NUM_PHYS_PAGES * PAGE_SIZE = 32 * 128 = 3840 bytes
+
+3)¿Qué modificaría para cambiar la cantidad de memoria?
+
+	Para cambiar la cantidad de memoria cambiaría el número de paginas cuando llamo al constructor
+	Machine::Machine(SingleStepper *st, unsigned aNumPhysicalPages);
+
+4)¿De qué tamaño es un disco?
+
+	SECTOR_SIZE = 128;       
+	SECTORS_PER_TRACK = 32;                           
+	NUM_TRACKS = 32;         
+	NUM_SECTORS = SECTORS_PER_TRACK * NUM_TRACKS;
+	DISK_SIZE = NUM_SECTORS * SECTOR_SIZE = 131,072 bytes
+
+5)¿Cuántas instrucciones de MIPS simula la máquina virtual de Nachos?
+	
+	(encoding.hh)	   
+    OP_ADD      =  1,
+    OP_ADDI     =  2,
+    OP_ADDIU    =  3,
+    OP_ADDU     =  4,
+    OP_AND      =  5,
+    OP_ANDI     =  6,
+    OP_BEQ      =  7,
+    OP_BGEZ     =  8,
+    OP_BGEZAL   =  9,
+    OP_BGTZ     = 10,
+    OP_BLEZ     = 11,
+    OP_BLTZ     = 12,
+    OP_BLTZAL   = 13,
+    OP_BNE      = 14,
+    OP_DIV      = 16,
+    OP_DIVU     = 17,
+    OP_J        = 18,
+    OP_JAL      = 19,
+    OP_JALR     = 20,
+    OP_JR       = 21,
+    OP_LB       = 22,
+    OP_LBU      = 23,
+    OP_LH       = 24,
+    OP_LHU      = 25,
+    OP_LUI      = 26,
+    OP_LW       = 27,
+    OP_LWL      = 28,
+    OP_LWR      = 29,
+    OP_MFHI     = 31,
+    OP_MFLO     = 32,
+    OP_MTHI     = 34,
+    OP_MTLO     = 35,
+    OP_MULT     = 36,
+    OP_MULTU    = 37,
+    OP_NOR      = 38,
+    OP_OR       = 39,
+    OP_ORI      = 40,
+    OP_RFE      = 41,
+    OP_SB       = 42,
+    OP_SH       = 43,
+    OP_SLL      = 44,
+    OP_SLLV     = 45,
+    OP_SLT      = 46,
+    OP_SLTI     = 47,
+    OP_SLTIU    = 48,
+    OP_SLTU     = 49,
+    OP_SRA      = 50,
+    OP_SRAV     = 51,
+    OP_SRL      = 52,
+    OP_SRLV     = 53,
+    OP_SUB      = 54,
+    OP_SUBU     = 55,
+    OP_SW       = 56,
+    OP_SWL      = 57,
+    OP_SWR      = 58,
+    OP_XOR      = 59,
+    OP_XORI     = 60,
+    OP_SYSCALL  = 61,
+    OP_UNIMP    = 62,
+    OP_RES      = 63,
+    MAX_OPCODE  = 63
+
+6)¿En qué archivos está definida la función main? ¿En qué archivo está definida la función
+main del ejecutable nachos del directorio userprog?
+	
+	La función main esta definida unicamente en la carpeta threads. El ejecutable que se compila desde
+	userprog utiliza la función main definida en threads con la bandera de USER_PROGRAM activada.
+
+7)¿Nombre los archivos fuente en los que figuran las funciones y métodos llamados por el
+  main de Nachos al ejecutarlo en el directorio threads, hasta dos niveles de profundidad.
+  Por ejemplo: main llama a Initialize, que está en tal archivo; e Initialize llama
+  a ASSERT, que está en tal otro archivo.
+
+8)¿Qué efecto hacen las macros ASSERT y DEBUG definidas en lib/utility.hh?
+
+9)Comente el efecto de las distintas banderas de depuración.
+
+10)¿Dónde están definidas las constantes USER PROGRAM, FILESYS NEEDED, FILESYS STUB
+   y NETWORK?
+
+11)¿Qué argumentos de línea de comandos admite Nachos? ¿Qué efecto tiene la opción -rs?
+
+12)Al ejecutar nachos -i, se obtiene información del sistema. Sin embargo está incom-
+   pleta. Modifique el código para que se muestren los datos que faltan.
+
+13)¿Cuál es la diferencia entre las clases List y SynchList?
+
+14)Modifique el caso de prueba simple del directorio threads para que se generen 5 hilos
+   en lugar de 2.
+
+15)Modifique el caso de prueba para que estos cinco hilos utilicen un semáforo inicializado
+   en 3. Esto debe ocurrir solo si se define la macro de compilación SEMAPHORE TEST.
+
+16)Agregue al caso anterior una línea de depuración que diga cuándo cada hilo hace un P()
+   y cuándo un V(). La salida debe verse por pantalla solamente si se activa la bandera
+   de depuración correspondiente.
+
+17)En threads se provee un caso de prueba que implementa el jardín ornamental. Sin
+   embargo, el resultado es erróneo. Corríjalo de forma que se mantengan los cambios de
+   contexto, sin agregar nuevas variables.
+
+18)Replique el jardín ornamental en un nuevo caso de prueba. Revierta la solución anterior
+   y solucione el problema usando semáforos esta vez.
+
+
