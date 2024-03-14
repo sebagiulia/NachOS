@@ -97,6 +97,13 @@ main del ejecutable nachos del directorio userprog?
   main de Nachos al ejecutarlo en el directorio threads, hasta dos niveles de profundidad.
   Por ejemplo: main llama a Initialize, que está en tal archivo; e Initialize llama
   a ASSERT, que está en tal otro archivo.
+	
+	Initialize(system.cc) -> ASSERT(assert.cc)
+	DEBUG(utility.hh) 
+	SysInfo(sys_info.cc)
+	ThreadTest(thread_test.cc)
+	interrupt->Halt(interrupt.cc)
+	currentThread->Finish(thread.cc)	
 
 8)¿Qué efecto hacen las macros ASSERT y DEBUG definidas en lib/utility.hh?
 
