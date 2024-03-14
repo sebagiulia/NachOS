@@ -98,12 +98,12 @@ main del ejecutable nachos del directorio userprog?
   Por ejemplo: main llama a Initialize, que está en tal archivo; e Initialize llama
   a ASSERT, que está en tal otro archivo.
 	
-	Initialize(system.cc) -> ASSERT(assert.cc)
-	DEBUG(utility.hh) 
-	SysInfo(sys_info.cc)
-	ThreadTest(thread_test.cc)
-	interrupt->Halt(interrupt.cc)
-	currentThread->Finish(thread.cc)	
+	Initialize(system.cc) -> ASSERT(lib/assert.cc)
+	DEBUG(lib/utility.hh) 
+	SysInfo(threads/sys_info.cc)
+	ThreadTest(threads/thread_test.cc)
+	interrupt->Halt(machine/interrupt.cc)
+	currentThread->Finish(threads/thread.cc)	
 
 8)¿Qué efecto hacen las macros ASSERT y DEBUG definidas en lib/utility.hh?
 
@@ -115,6 +115,17 @@ DEBUG('t', "Entering main\n"); imprimirá
 [t] Entering main
 
 9)Comente el efecto de las distintas banderas de depuración.
+
+`+` -- Activa todas las banderas de depuración.
+`t` -- Bandera de threads.
+`s` -- Variables de condición, semáforos y locks.
+`i` -- Interrupciones.
+`m` -- Emulación del CPU (se requiere de *USER_PROGRAM*).
+`d` -- Emulación del disco (requiere *FILESYS*).
+`f` -- Bandera de File system (requiere *FILESYS*).
+`a` -- Espacio de direcciones (requiere *USER_PROGRAM*).
+`e` -- Manejo de excepciones (requiere *USER_PROGRAM*).
+
 
 10)¿Dónde están definidas las constantes USER PROGRAM, FILESYS NEEDED, FILESYS STUB
    y NETWORK?
