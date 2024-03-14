@@ -107,6 +107,13 @@ main del ejecutable nachos del directorio userprog?
 
 8)¿Qué efecto hacen las macros ASSERT y DEBUG definidas en lib/utility.hh?
 
+ASSERT(condición): si la condición es falsa, imprime un mensaje mostrando la condición que falló, el archivo y la
+línea en la que se encuentra, y lanza una excepción dump core.
+DEBUG: si la bandera correspondiente de debug está activada, imprime la bandera seguida del mensaje.
+Por ejemplo, si corremos ./nachos -d t
+DEBUG('t', "Entering main\n"); imprimirá
+[t] Entering main
+
 9)Comente el efecto de las distintas banderas de depuración.
 
 10)¿Dónde están definidas las constantes USER PROGRAM, FILESYS NEEDED, FILESYS STUB
