@@ -13,6 +13,7 @@
 
 	Para cambiar la cantidad de memoria cambiaría el número de paginas cuando llamo al constructor
 	Machine::Machine(SingleStepper *st, unsigned aNumPhysicalPages);
+	También se puede llamar a nachos con la opción -m, que modifica el número de páginas de la memoria.
 
 4)¿De qué tamaño es un disco?
 
@@ -134,8 +135,45 @@ USER_PROGRAM y FILESYS_NEEDED estan definidas en userprog/Makefile, vmem/Makefil
 FILESYS STUB está definida en userprog/Makefile y vmem/Makefile.
 
 11)¿Qué argumentos de línea de comandos admite Nachos? ¿Qué efecto tiene la opción -rs?
+Los argumentos son:
+Opciones generales:
+	-d <debugflags> Enciende los mensajes de debug.
+	-do <debugopts> debugopts: 
+			    location: Cuando se imprime un mensaje de debug, se imprime también el archivo y
+				      la línea donde se encuentra.
+			    function: Cuando se imprime un mensaje de debug, también se imprime la función que lo llamó.
+			    sleep: Llama a sleep 1 segundo luego de cada mensaje de debug.
+			    interactive: Espera el input del usuario luego de cada mensaje de debug.
 
+	-rs <random seed #> Hace que cada thread haga Yield a un tiempo aleatorio. Esta secuencia es replicable, ya que si 
+			    llamamos al programa con la misma semilla, tendrá la misma secuencia. Esto nos permite volver a
+			    ejecutar nachos con aleatoriedad, pero pudiendo volver a ejecutar de la misma forma si es necesario.
 
+	-z 		    Imprime la versión y la información de copyright.
+
+	-m <num phys pages> Cantidad de páginas de memoria simulada.
+
+Opciones para THREADS:
+	-tt		    Permite elegir entre los test disponibles para ejecutar. 
+
+	-tN 		    Ejecuta el test N.
+
+Opciones para USER_PROGRAM:
+	-s 		    El programa se ejecuta en modo paso a paso. 
+
+	-x <nachos file>    Ejecuta un programa de usuario. 
+
+	-tc <consoleIn> <consoleOut> Test de consola.
+
+Opciones para FILESYS_:
+	-f 		   Formatea el disco.
+	-cp <unix file> <nachos file> Copia un archivo de UNIX a nachos.
+	-pr <nachos file>  Imprime un archivo de nachos.
+	-rm <nachos file>  Elimina un archivo de nachos.
+	-ls 		   Lista los contenidos del directorio de nachos.
+	-D 		   Imprime los contenidos de todo el file system.
+	-c 		   Checkea la integridad del file system.
+	-tf		   Checkea el rendimiento del file system.
 
 12)Al ejecutar nachos -i, se obtiene información del sistema. Sin embargo está incom-
    pleta. Modifique el código para que se muestren los datos que faltan.
