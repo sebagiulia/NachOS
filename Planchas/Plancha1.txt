@@ -129,8 +129,13 @@ DEBUG('t', "Entering main\n"); imprimirá
 
 10)¿Dónde están definidas las constantes USER PROGRAM, FILESYS NEEDED, FILESYS STUB
    y NETWORK?
+Están definidas en los Makefile de cada carpeta, según lo requerido.
+USER_PROGRAM y FILESYS_NEEDED estan definidas en userprog/Makefile, vmem/Makefile y filesys/Makefile.
+FILESYS STUB está definida en userprog/Makefile y vmem/Makefile.
 
 11)¿Qué argumentos de línea de comandos admite Nachos? ¿Qué efecto tiene la opción -rs?
+
+
 
 12)Al ejecutar nachos -i, se obtiene información del sistema. Sin embargo está incom-
    pleta. Modifique el código para que se muestren los datos que faltan.
