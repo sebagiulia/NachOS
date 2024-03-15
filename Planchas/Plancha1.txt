@@ -146,7 +146,7 @@ Opciones generales:
 			    interactive: Espera el input del usuario luego de cada mensaje de debug.
 
 	-rs <random seed #> Hace que cada thread haga Yield a un tiempo aleatorio. Esta secuencia es replicable, ya que si 
-			    llamamos al programa con la misma semilla, tendrá la misma secuencia. Esto nos permite volver a
+			    llamamos al programa con la misma semilla, tendrá la misma secuencia. Esto nos permite
 			    ejecutar nachos con aleatoriedad, pero pudiendo volver a ejecutar de la misma forma si es necesario.
 
 	-z 		    Imprime la versión y la información de copyright.
