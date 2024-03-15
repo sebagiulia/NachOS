@@ -180,6 +180,11 @@ Opciones para FILESYS_:
 
 13)¿Cuál es la diferencia entre las clases List y SynchList?
 
+La diferencia es que SynchList es sincronizada, y List no. Esto significa que con SynchList sólo un thread puede
+acceder a los objetos de la clase a la vez, evitando problemas de sincronización entre threads. SynchList tiene 
+como objetos una lista de clase List, un lock y una variable de condición que indica si la lista está vacía. 
+Si la lista está vacía mientras un thread quiere eliminar un elemento, el thread esperará hasta que no lo esté.
+
 14)Modifique el caso de prueba simple del directorio threads para que se generen 5 hilos
    en lugar de 2.
 
