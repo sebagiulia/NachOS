@@ -178,6 +178,50 @@ Opciones para FILESYS_:
 12)Al ejecutar nachos -i, se obtiene información del sistema. Sin embargo está incom-
    pleta. Modifique el código para que se muestren los datos que faltan.
 
+Realizamos las siguientes modificaciones en el archivo sys_info.cc:
+
+-----------------------(agregamos este bloque de código al inicio)
+#ifdef USER_PROGRAM
+#include "system.hh"
+#endif
+-----------------------
+
+----------------------------------------------------(agregamos el siguiente bloque de código encima del siguiente)
+unsigned num_pages = DEFAULT_NUM_PHYS_PAGES;
+#ifdef USER_PROGRAM
+      num_pages = machine->GetNumPhysicalPages();
+#endif    
+----------------------------------------------------
+
+-------------------------------------(modificamos las siguientes lineas de código)
+    printf("\n\
+Memory:\n\
+  Page size: %d bytes.\n\
+  Number of pages: %d.\n\
+  Number of TLB entries: %d.\n\
+  Memory size: %d bytes.\n", PAGE_SIZE, num_pages, TLB_SIZE, num_pages * PAGE_SIZE);
+
+#include"../machine/disk.hh"
+    printf("\n\
+Disk:\n\
+  Sector size: %d bytes.\n\
+  Sectors per track: %d.\n\
+  Number of tracks: %d.\n\
+  Number of sectors: %d.\n\
+  Disk size: %d bytes.\n", SECTOR_SIZE, SECTORS_PER_TRACK, NUM_TRACKS, NUM_SECTORS, NUM_SECTORS * SECTOR_SIZE);
+    printf("\n\
+Filesystem:\n\
+  Sectors per header: %u.\n\
+  Maximum file size: %u bytes.\n\
+  File name maximum length: %u.\n\
+  Free sectors map size: %u bytes.\n\
+  Maximum number of dir-entries: %u.\n\
+  Directory file size: %u bytes.\n",
+      NUM_DIRECT, MAX_FILE_SIZE, FILE_NAME_MAX_LEN,
+      FREE_MAP_FILE_SIZE, NUM_DIR_ENTRIES, DIRECTORY_FILE_SIZE);
+}
+------------------------------------------------------------------------------------------------------------------
+
 13)¿Cuál es la diferencia entre las clases List y SynchList?
 
 La diferencia es que SynchList es sincronizada, y List no. Esto significa que con SynchList sólo un thread puede
@@ -187,6 +231,46 @@ Si la lista está vacía mientras un thread quiere eliminar un elemento, el thre
 
 14)Modifique el caso de prueba simple del directorio threads para que se generen 5 hilos
    en lugar de 2.
+
+----------------------------------------------------------------------------------------------(modificamos las siguientes lineas de código)
+bool threads[4] = {false};
+void
+SimpleThread(void *name_)
+{
+    for (unsigned num = 0; num < 10; num++) {
+        printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+        currentThread->Yield();
+    }
+    if(!strcmp(currentThread->GetName(), "2nd")) threads[0] = true;
+    else if(!strcmp(currentThread->GetName(), "3rd")) threads[1] = true;
+    else if(!strcmp(currentThread->GetName(), "4th")) threads[2] = true;
+    else if(!strcmp(currentThread->GetName(), "5th")) threads[3] = true;
+    printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
+ 
+}
+
+void
+ThreadTestSimple()
+{
+    Thread *newThread2 = new Thread("2nd");
+    Thread *newThread3 = new Thread("3rd");
+    Thread *newThread4 = new Thread("4th");
+    Thread *newThread5 = new Thread("5th");
+    newThread2->Fork(SimpleThread, NULL);
+    newThread3->Fork(SimpleThread, NULL);
+    newThread4->Fork(SimpleThread, NULL);
+    newThread5->Fork(SimpleThread, NULL);
+
+    //the "main" thread also executes the same function
+    SimpleThread(NULL);
+
+   //Wait for the threads to finish if needed
+    while (!(threads[0] && threads[1] && threads[2] && threads[3])) {
+        currentThread->Yield(); 
+    }
+    printf("Test finished\n");
+}
+--------------------------------------------------------------------------------------------------
 
 15)Modifique el caso de prueba para que estos cinco hilos utilicen un semáforo inicializado
    en 3. Esto debe ocurrir solo si se define la macro de compilación SEMAPHORE TEST.
