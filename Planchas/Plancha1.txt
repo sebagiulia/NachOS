@@ -99,8 +99,12 @@ main del ejecutable nachos del directorio userprog?
   Por ejemplo: main llama a Initialize, que está en tal archivo; e Initialize llama
   a ASSERT, que está en tal otro archivo.
 	
-	Initialize(system.cc) -> ASSERT(lib/assert.cc)
-	DEBUG(lib/utility.hh) 
+	Initialize(system.cc) |- ASSERT(lib/assert.cc)
+	Initialize(system.cc) |- debug.setFlags(debug.cc)
+	Initialize(system.cc) |- debug.setOpts(debug.cc)
+	Initialize(system.cc) |- currentThread->SetStatus(thread.cc)
+	Initialize(system.cc) |- interrupt->Enable(interrupt.cc)
+	DEBUG(lib/utility.hh) |- debug.Print(debug.cc)
 	SysInfo(threads/sys_info.cc)
 	ThreadTest(threads/thread_test.cc)
 	interrupt->Halt(machine/interrupt.cc)
