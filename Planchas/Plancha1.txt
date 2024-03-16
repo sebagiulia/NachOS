@@ -318,8 +318,8 @@ Turnstile(void *n_)
     unsigned *n = (unsigned *) n_;
 
     for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++) {
-		S.P();
-		int temp = count;
+	S.P();
+	int temp = count;
         printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
         currentThread->Yield();
         printf("Turnstile %u back with temp=%u.\n", *n, temp);
