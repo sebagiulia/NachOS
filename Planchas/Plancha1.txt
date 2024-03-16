@@ -282,9 +282,31 @@ ThreadTestSimple()
 ------------------------------- Agregamos este bloque de código arriba en thread_test_simple.cc
 #ifdef SEMAPHORE_TEST
 #include "semaphore.hh"
-Semaphore S("sem", 3);
+Semaphore sem("sem", 3);
 #endif
--------------------------------
+------------------------------- Modificamos la función SimpleThread
+void
+SimpleThread(void *name_)
+{
+	#ifdef SEMAPHORE_TEST
+	sem.P();
+	#endif
+    for (unsigned num = 0; num < 10; num++) {
+        printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+        currentThread->Yield();
+    }
+    #ifdef SEMAPHORE_TEST	
+    sem.V();
+    #endif
+    if(!strcmp(currentThread->GetName(), "2nd")) threads[0] = true;
+    else if(!strcmp(currentThread->GetName(), "3rd")) threads[1] = true;
+    else if(!strcmp(currentThread->GetName(), "4th")) threads[2] = true;
+    else if(!strcmp(currentThread->GetName(), "5th")) threads[3] = true;
+    printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
+ 
+}
+
+
 
 16)Agregue al caso anterior una línea de depuración que diga cuándo cada hilo hace un P()
    y cuándo un V(). La salida debe verse por pantalla solamente si se activa la bandera
