@@ -279,6 +279,13 @@ ThreadTestSimple()
 15)Modifique el caso de prueba para que estos cinco hilos utilicen un semáforo inicializado
    en 3. Esto debe ocurrir solo si se define la macro de compilación SEMAPHORE TEST.
 
+------------------------------- Agregamos este bloque de código arriba en thread_test_simple.cc
+#ifdef SEMAPHORE_TEST
+#include "semaphore.hh"
+Semaphore S("sem", 3);
+#endif
+-------------------------------
+
 16)Agregue al caso anterior una línea de depuración que diga cuándo cada hilo hace un P()
    y cuándo un V(). La salida debe verse por pantalla solamente si se activa la bandera
    de depuración correspondiente.
