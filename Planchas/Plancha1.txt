@@ -233,7 +233,7 @@ Si la lista está vacía mientras un thread quiere eliminar un elemento, el thre
    en lugar de 2.
 
 ----------------------------------------------------------------------------------------------(modificamos las siguientes lineas de código)
-bool threads[4] = {false};
+bool threads[4] = {false, false, false, false};
 void
 SimpleThread(void *name_)
 {
