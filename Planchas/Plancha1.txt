@@ -283,6 +283,24 @@ ThreadTestSimple()
    embargo, el resultado es erróneo. Corríjalo de forma que se mantengan los cambios de
    contexto, sin agregar nuevas variables.
 
+-------------------------------(modificamos la función Turnstile en thread_test_garden.cc)
+Turnstile(void *n_)
+{
+    unsigned *n = (unsigned *) n_;
+
+    for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++) {
+        int temp = count;
+        count = temp + 1;
+        printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
+        currentThread->Yield();
+        printf("Turnstile %u back with temp=%u.\n", *n, temp);
+        currentThread->Yield();
+    }
+    printf("Turnstile %u finished. Count is now %u.\n", *n, count);
+    done[*n] = true;
+}
+------------------------------------------------------------------------------------------
+
 18)Replique el jardín ornamental en un nuevo caso de prueba. Revierta la solución anterior
    y solucione el problema usando semáforos esta vez.
 
