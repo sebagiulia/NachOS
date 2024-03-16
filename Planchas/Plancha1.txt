@@ -315,6 +315,34 @@ SimpleThread(void *name_)
    y cuándo un V(). La salida debe verse por pantalla solamente si se activa la bandera
    de depuración correspondiente.
 
+void
+SimpleThread(void *name_)
+{
+    #ifdef SEMAPHORE_TEST
+    sem.P();
+    DEBUG('s', "Thread `%s` called P()\n", currentThread->GetName());
+    #endif
+
+    for (unsigned num = 0; num < 10; num++) {
+        printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+        currentThread->Yield();
+    }
+
+    #ifdef SEMAPHORE_TEST	
+    sem.V();
+    DEBUG('s', "Thread `%s` called V()\n", currentThread->GetName());
+    #endif
+
+    if(!strcmp(currentThread->GetName(), "2nd")) threads[0] = true;
+    else if(!strcmp(currentThread->GetName(), "3rd")) threads[1] = true;
+    else if(!strcmp(currentThread->GetName(), "4th")) threads[2] = true;
+    else if(!strcmp(currentThread->GetName(), "5th")) threads[3] = true;
+    printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
+ 
+}
+
+
+
 17)En threads se provee un caso de prueba que implementa el jardín ornamental. Sin
    embargo, el resultado es erróneo. Corríjalo de forma que se mantengan los cambios de
    contexto, sin agregar nuevas variables.
