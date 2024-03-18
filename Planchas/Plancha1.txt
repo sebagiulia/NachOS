@@ -288,18 +288,20 @@ Semaphore sem("sem", 3);
 void
 SimpleThread(void *name_)
 {
-    #ifdef SEMAPHORE_TEST
-    sem.P();
-    #endif
-
+    
     for (unsigned num = 0; num < 10; num++) {
-        printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
-        currentThread->Yield();
-    }
+	#ifdef SEMAPHORE_TEST
+    	sem.P();
+	#endif
 
-    #ifdef SEMAPHORE_TEST	
-    sem.V();
-    #endif
+        printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+
+    	#ifdef SEMAPHORE_TEST	
+    	sem.V();
+    	#endif
+        
+	currentThread->Yield();
+    }
 
     if(!strcmp(currentThread->GetName(), "2nd")) threads[0] = true;
     else if(!strcmp(currentThread->GetName(), "3rd")) threads[1] = true;
