@@ -24,7 +24,8 @@
 	DISK_SIZE = NUM_SECTORS * SECTOR_SIZE = 131,072 bytes
 
 5)¿Cuántas instrucciones de MIPS simula la máquina virtual de Nachos?
-	
+
+	Hay un total de 63 instrucciones de MIPS:
 	(encoding.hh)	   
     OP_ADD      =  1,
     OP_ADDI     =  2,
@@ -85,8 +86,7 @@
     OP_XORI     = 60,
     OP_SYSCALL  = 61,
     OP_UNIMP    = 62,
-    OP_RES      = 63,
-    MAX_OPCODE  = 63
+    OP_RES      = 63
 
 6)¿En qué archivos está definida la función main? ¿En qué archivo está definida la función
 main del ejecutable nachos del directorio userprog?
