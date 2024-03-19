@@ -2,6 +2,7 @@
 	
 	Se prefiere emular una CPU en vez de utilizar directamente la CPU existente ya que permite un mayor
 	control sobre los procesos que se ejecutan pudiendo depurar de forma mas profunda cada uno de estos.
+	Además, nachos corre en una arquitectura diferente por lo que emularla nos facilita su implementación.
 
 2)¿Cuánta memoria tiene la máquina simulada para Nachos?
 	
@@ -100,15 +101,22 @@ main del ejecutable nachos del directorio userprog?
   a ASSERT, que está en tal otro archivo.
 	
 	Initialize(system.cc) |- ASSERT(lib/assert.cc)
-	Initialize(system.cc) |- debug.setFlags(debug.cc)
-	Initialize(system.cc) |- debug.setOpts(debug.cc)
-	Initialize(system.cc) |- currentThread->SetStatus(thread.cc)
-	Initialize(system.cc) |- interrupt->Enable(interrupt.cc)
-	DEBUG(lib/utility.hh) |- debug.Print(debug.cc)
+	Initialize(system.cc) |- debug.setFlags(lib/debug.cc)
+	Initialize(system.cc) |- debug.setOpts(lib/debug.cc)
+	Initialize(system.cc) |- currentThread->SetStatus(threads/thread.cc)
+	Initialize(system.cc) |- interrupt->Enable(machine/interrupt.cc)
+	DEBUG(lib/utility.hh) |- debug.Print(lib/debug.cc)
 	SysInfo(threads/sys_info.cc)
-	ThreadTest(threads/thread_test.cc)
-	interrupt->Halt(machine/interrupt.cc)
-	currentThread->Finish(threads/thread.cc)	
+	PrintVersion(main.cc)
+	ThreadTest(threads/thread_test.cc) |- DEBUG(lib/utility.hh)
+	ThreadTest(threads/thread_test.cc) |- Run(threads/thread_test.cc)
+	ThreadTest(threads/thread_test.cc) |- Choose(threads/thread_test.cc)
+	interrupt->Halt(machine/interrupt.cc) |- stats->print(machine/statistics.cc)
+	interrupt->Halt(machine/interrupt.cc) |- Cleanup(threads/system.cc)
+	currentThread->Finish(threads/thread.cc) |- ASSERT(lib/assert.cc)
+	currentThread->Finish(threads/thread.cc) |- DEBUG(lib/utility.hh)
+	currentThread->Finish(threads/thread.cc) |- SetLevel(machine/interrupt.cc)
+	currentThread->Finish(threads/thread.cc) |- Sleep(threads/thread.cc)
 
 8)¿Qué efecto hacen las macros ASSERT y DEBUG definidas en lib/utility.hh?
 
@@ -360,7 +368,7 @@ Turnstile(void *n_)
 
     for (unsigned i = 0; i < ITERATIONS_PER_TURNSTILE; i++) {
         int temp = count;
-        count = temp + 1;
+        count = temp + 1; 	
         printf("Turnstile %u yielding with temp=%u.\n", *n, temp);
         currentThread->Yield();
         printf("Turnstile %u back with temp=%u.\n", *n, temp);
