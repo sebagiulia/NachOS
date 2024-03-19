@@ -320,20 +320,24 @@ SimpleThread(void *name_)
 void
 SimpleThread(void *name_)
 {
-    #ifdef SEMAPHORE_TEST
-    sem.P();
-    DEBUG('s', "Thread `%s` called P()\n", currentThread->GetName());
-    #endif
-
     for (unsigned num = 0; num < 10; num++) {
-        printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
-        currentThread->Yield();
-    }
+	
+	#ifdef SEMAPHORE_TEST
+	sem.P();
+	DEBUG('s', "Thread `%s` called P()\n", currentThread->GetName());
+	#endif
 
-    #ifdef SEMAPHORE_TEST	
-    sem.V();
-    DEBUG('s', "Thread `%s` called V()\n", currentThread->GetName());
-    #endif
+	printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
+
+	#ifdef SEMAPHORE_TEST	
+    	sem.V();
+   	DEBUG('s', "Thread `%s` called V()\n", currentThread->GetName());
+    	#endif
+	}
+	currentThread->Yield();
+}
+
+   
 
     if(!strcmp(currentThread->GetName(), "2nd")) threads[0] = true;
     else if(!strcmp(currentThread->GetName(), "3rd")) threads[1] = true;
