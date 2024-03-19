@@ -382,6 +382,9 @@ Turnstile(void *n_)
 18)Replique el jardín ornamental en un nuevo caso de prueba. Revierta la solución anterior
    y solucione el problema usando semáforos esta vez.
 
+Modificamos las siguientes líneas en thread_test_garden_sem.cc, habiendo comenzado con un archivo igual a 
+thread_test_garden.cc
+
 -----------------------------------------------------------------Agregamos las siguientes líneas de código al inicio:
 #include "semaphore.hh"
 Semaphore S("semaforo", 1);
@@ -404,4 +407,16 @@ Turnstile(void *n_)
     printf("Turnstile %u finished. Count is now %u.\n", *n, count);
     done[*n] = true;
 }
+
+-----------------------------------------------------------------------
+Modificamos las siguientes lineas en code/Makefile.common:
+
+THREAD_HDR = ... /
+	     thread_test_garden_sem.hh
+
+
+THREAD_SRC = ... /
+	     thread_test_garden_sem.cc
+
+
 
