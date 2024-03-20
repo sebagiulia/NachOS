@@ -387,6 +387,7 @@ thread_test_garden.cc
 
 -----------------------------------------------------------------Agregamos las siguientes líneas de código al inicio:
 #include "semaphore.hh"
+#include "thread_test_garden_sem.hh" // cambiamos el include
 Semaphore S("semaforo", 1);
 -----------------------------------------------------------------Modificamos las siguientes líneas de código:
 static void
@@ -417,6 +418,41 @@ THREAD_HDR = ... /
 
 THREAD_SRC = ... /
 	     thread_test_garden_sem.cc
+
+-----------------------------------------------------------------------
+Agregamos el siguiente archivo thread_test_garden_sem.hh a la carpeta threads
+
+
+
+#ifndef NACHOS_THREADS_THREADTESTGARDENSEM__HH
+#define NACHOS_THREADS_THREADTESTGARDENSEM__HH
+
+void ThreadTestGardenSem();
+
+#endif
+
+
+----------------------------------------------------------------------------
+Modificamos las siguientes lineas de threads_test para agregar nuestro test
+
+#include "thread_test_garden_sem.hh" //agregamos al inicio
+
+static const Test TESTS[] = {
+    { &ThreadTestSimple,   "simple",   "Simple thread interleaving" },
+    { &ThreadTestGarden,   "garden",   "Ornamental garden" },
+    { &ThreadTestProdCons, "prodcons", "Producer/Consumer" },
+    { &ThreadTestGardenSem, "garden_sem", "Ornamental garden with semaphores" }
+    
+};
+---------------------------------------------------------------------------
+Ahora podemos correr ./nachos -tt
+
+Available tests:
+(0) simple: Simple thread interleaving
+(1) garden: Ornamental garden
+(2) prodcons: Producer/Consumer
+(3) garden_sem: Ornamental garden with semaphores
+
 
 
 
