@@ -3,26 +3,42 @@
 #include <unistd.h>
 #include "thread_test_prod_cons.hh"
 #include "system.hh"
-#include "synch_list.hh"
+#include "lock.hh"
+#include "condition.hh"
 
-#define M 5
-#define N 5
+#define M 1
+#define N 1
+#define BUFFER_LEN 3
 
-SynchList<int *> buffer;
+int buffer[BUFFER_LEN];
+int pos = 0;
+
+Lock cons_lock("cons_lock"); // Mutex para controlar que los consumidores no reciban si el buffer esta vacío
+Condition non_empty_buffer_cond("non_empty_buffer_cond", &cons_lock);  // Condicion de no estar vacío el buffer 
+
+Lock prod_lock("prod_lock"); // Mutex para controlar que los productores no envien si el buffer esta lleno
+Condition non_full_buffer_cond("non_full_buffer_cond", &prod_lock); // Condicion de no estar lleno el buffer
+
+Lock pos_lock("pos_lock"); // Mutex para acceder/modificar pos y al buffer
 
 static void prod_f(void *name)
 {
     printf("Productor %s creado\n", (char *)name);
 
-	while (1) {
-        //usleep(50);
-		sleep(random() % 3);
+	for(int i = 1; i <= 1000; i++) {
+        usleep(50);
+        prod_lock.Acquire();
+        while(pos == BUFFER_LEN) {
+            printf("Productor esperando (buffer lleno)\n"); 
+            non_full_buffer_cond.Wait(); // Esperamos que se genere lugar en el buffer
+        }
 
-		int *p = new int;
-		*p = random() % 100;
-		printf("Productor %s: produje %p->%d\n", (char *)name, p, *p);
-        buffer.Append(p);
-        currentThread->Yield();
+        pos_lock.Acquire();
+        buffer[pos] = i;
+        printf("Productor produce: %d en %d\n", i, pos++);
+        pos_lock.Release();
+        non_empty_buffer_cond.Signal();
+
 	}
 }
 
@@ -31,13 +47,18 @@ static void cons_f(void *name)
     printf("Consumidor %s creado\n", (char *)name);
 
 	while (1) {
-        //usleep(50);
-		sleep(random() % 3);
-
-		int *p = buffer.Pop();
-		printf("Consumidor %s: obtuve %p->%d\n", (char *)name, p, *p);
-		delete p;
-        currentThread->Yield();
+        usleep(50);
+        cons_lock.Acquire();
+        while(pos == 0) {
+            printf("Consumidor esperando (buffer vacio)\n");
+            non_empty_buffer_cond.Wait(); // Esperamos que se ocupe un lugar en el buffer
+        }
+        
+        pos_lock.Acquire();
+        int i = buffer[--pos];
+        printf("Consumidor consume: %d en %d\n", i, pos);
+        pos_lock.Release();
+        non_full_buffer_cond.Signal();
 
 	}
 }
