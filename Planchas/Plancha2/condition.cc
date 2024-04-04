@@ -42,17 +42,16 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
-    // TODO
     count++;
     l->Release();
     s->P();
+    l->Acquire();
 }
 
 void
 Condition::Signal()
 {
     l2->Acquire();
-    // TODO
     if(count != 0) {
         s->V();
         count--;
@@ -68,5 +67,4 @@ Condition::Broadcast()
     for(; count > 0; count--)
         s->V();      
     l2->Release();
-    // TODO
 }

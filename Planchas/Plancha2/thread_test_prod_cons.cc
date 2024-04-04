@@ -9,8 +9,9 @@
 #define M 1
 #define N 1
 #define BUFFER_LEN 3
+bool done[2]; // Banderas para indicar el final de los hilos(solo valido para un productor y un consumidor)
 
-int buffer[BUFFER_LEN];
+int buffer[BUFFER_LEN]; 
 int pos = 0;
 
 Lock cons_lock("cons_lock"); // Mutex para controlar que los consumidores no reciban si el buffer esta vacío
@@ -38,15 +39,17 @@ static void prod_f(void *name)
         printf("Productor produce: %d en %d\n", i, pos++);
         pos_lock.Release();
         non_empty_buffer_cond.Signal();
+        prod_lock.Release();
 
 	}
+    done[0] = true;
 }
 
 static void cons_f(void *name)
 {
     printf("Consumidor %s creado\n", (char *)name);
 
-	while (1) {
+	for(int j = 0; j < 1000; j++) {
         usleep(50);
         cons_lock.Acquire();
         while(pos == 0) {
@@ -59,13 +62,16 @@ static void cons_f(void *name)
         printf("Consumidor consume: %d en %d\n", i, pos);
         pos_lock.Release();
         non_full_buffer_cond.Signal();
+        cons_lock.Release();
 
 	}
+    done[1] = true;
 }
 
 void ThreadTestProdCons() {
     char **pnames = new char*[M];
     char **cnames = new char*[N];
+    done[0] = done[1] = false;
 
     int i;
 	for (i = 0; i < M; i++){
@@ -82,7 +88,18 @@ void ThreadTestProdCons() {
 		c->Fork(cons_f, cnames[i]);
     }
 
-    while(1) {
+    while(!(done[0] && done[1])) {
         currentThread->Yield();
     };
+
+    for (unsigned j = 0; j < M; j++) {
+	    delete[] pnames[j];
+    }
+    delete []pnames;
+    
+    for (unsigned j = 0; j < N; j++) {
+	    delete[] cnames[j];
+    }
+    delete []cnames;
+    puts("Hilos finalizados");
 }
