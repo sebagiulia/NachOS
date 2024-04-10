@@ -43,6 +43,7 @@ Lock::Acquire()
 {
     ASSERT(!IsHeldByCurrentThread());
     sem->P();
+    DEBUG('s', "Thread \"%s\" acquired lock \"%s\" \n", currentThread->GetName(), name);
     owner = currentThread;
 }
 
@@ -52,7 +53,8 @@ Lock::Release()
     ASSERT(IsHeldByCurrentThread());
     owner = nullptr;
     sem->V();
-}
+    DEBUG('s', "Thread \"%s\" released lock \"%s\" \n", currentThread->GetName(), name);
+    }
 
 bool
 Lock::IsHeldByCurrentThread() const

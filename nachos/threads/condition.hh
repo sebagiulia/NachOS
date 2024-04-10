@@ -76,7 +76,7 @@ private:
 
     const char *name;
     // Other needed fields are to be added here.
-    Lock *l, *l2;
+    Lock *l;
     Semaphore *s;
     unsigned count;
 };
