@@ -33,7 +33,7 @@ LDFLAGS  =
 
 # Name of the final executable file in each subdirectory.
 PROGRAM = nachos
- 
+
 THREAD_HDR = threads/condition.hh              \
              threads/copyright.h               \
              threads/lock.hh                   \
@@ -46,6 +46,7 @@ THREAD_HDR = threads/condition.hh              \
              threads/thread_test.hh            \
              threads/thread_test_garden.hh     \
              threads/thread_test_prod_cons.hh  \
+             threads/thread_test_channel.hh    \
              threads/thread_test_simple.hh     \
              threads/thread_test_garden_sem.hh \
              lib/assert.hh                     \
@@ -56,7 +57,8 @@ THREAD_HDR = threads/condition.hh              \
              machine/interrupt.hh              \
              machine/system_dep.hh             \
              machine/statistics.hh             \
-             machine/timer.hh                  
+             machine/timer.hh                  \
+             threads/channel.hh
 THREAD_SRC = threads/main.cc                   \
              threads/condition.cc              \
              threads/lock.cc                   \
@@ -69,6 +71,7 @@ THREAD_SRC = threads/main.cc                   \
              threads/thread_test.cc            \
              threads/thread_test_garden.cc     \
              threads/thread_test_prod_cons.cc  \
+             threads/thread_test_channel.cc    \
              threads/thread_test_simple.cc     \
              threads/thread_test_garden_sem.cc \
              lib/assert.cc                     \
@@ -77,8 +80,8 @@ THREAD_SRC = threads/main.cc                   \
              machine/interrupt.cc              \
              machine/system_dep.cc             \
              machine/statistics.cc             \
-             machine/timer.cc                 
-
+             machine/timer.cc                  \
+             threads/channel.cc
 USERPROG_HDR = userprog/address_space.hh            \
                userprog/args.hh                     \
                userprog/debugger.hh                 \

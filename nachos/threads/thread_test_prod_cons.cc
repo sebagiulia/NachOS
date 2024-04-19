@@ -11,12 +11,12 @@
 #define BUFFER_LEN 3
 bool done[2]; // Banderas para indicar el final de los hilos(solo valido para un productor y un consumidor)
 
-int buffer[BUFFER_LEN]; 
+int buffer[BUFFER_LEN];
 int pos = 0;
 
 Lock pos_lock("pos_lock"); // Mutex para acceder/modificar pos y al buffer
 
-Condition non_empty_buffer_cond("non_empty_buffer_cond", &pos_lock);  // Condicion de no estar vacío el buffer 
+Condition non_empty_buffer_cond("non_empty_buffer_cond", &pos_lock);  // Condicion de no estar vacío el buffer
 Condition non_full_buffer_cond("non_full_buffer_cond", &pos_lock); // Condicion de no estar lleno el buffer
 
 
@@ -28,7 +28,7 @@ static void prod_f(void *name)
         usleep(50);
         pos_lock.Acquire();
         while(pos == BUFFER_LEN) {
-            printf("Productor esperando (buffer lleno)\n"); 
+            printf("Productor esperando (buffer lleno)\n");
             non_full_buffer_cond.Wait(); // Esperamos que se genere lugar en el buffer
         }
         buffer[pos] = i;
@@ -86,7 +86,7 @@ void ThreadTestProdCons() {
 	    delete[] pnames[j];
     }
     delete []pnames;
-    
+
     for (unsigned j = 0; j < N; j++) {
 	    delete[] cnames[j];
     }
