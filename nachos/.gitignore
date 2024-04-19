@@ -1,25 +1,25 @@
 # Para users de VS Code
 /.vscode/
 # Ejecutables, archivos swap y archivos innecesarios de make
-/code/**/*.o
-/code/**/SWAP.*
-/code/**/*.depends
-/code/**/*.coff
+/**/*.o
+/**/SWAP.*
+/**/*.depends
+/**/*.coff
 # Ejecutables de bin
-/code/bin/coff2flat
-/code/bin/coff2noff
-/code/bin/disassemble
-/code/bin/readnoff
+/bin/coff2flat
+/bin/coff2noff
+/bin/disassemble
+/bin/readnoff
 # Ignorar todos los ejecutables de nachos compilados
-/code/**/nachos
+/**/nachos
 # Quiero ignorar los programas de usuario (que no tienen extension) pero no su codigo fuente y archivos utiles
-/code/userland/*
-!/code/userland/*.c
-!/code/userland/*.s
-!/code/userland/Makefile
-!/code/userland/arrangement.ld
+/userland/*
+!/userland/*.c
+!/userland/*.s
+!/userland/Makefile
+!/userland/arrangement.ld
 # Disco simulado de la máquina de Nachos
-/code/**/DISK
+/**/DISK
 # Archivos basura al compilar latex
 /documentation/**/*.pdf
 /documentation/**/*.bin
@@ -36,4 +36,4 @@
 /documentation/**/*.xdv
 /documentation/**/*-converted-to.*
 # Ignorar txts en carpeta de código
-/code/**/*.txt
+/**/*.txt
