@@ -44,23 +44,20 @@ ThreadTestGardenSem()
 
     char **names = new char*[NUM_TURNSTILES];
     unsigned *values = new unsigned[NUM_TURNSTILES];
+    Thread **threads = new Thread*[NUM_TURNSTILES];
     for (unsigned i = 0; i < NUM_TURNSTILES; i++) {
         printf("Launching turnstile %u.\n", i);
         names[i] = new char[16];
         sprintf(names[i], "Turnstile %u", i);
         printf("Name: %s\n", names[i]);
         values[i] = i;
-        Thread *t = new Thread(names[i]);
-        t->Fork(Turnstile, (void *) &(values[i]));
+        threads[i] = new Thread(names[i], true);
+        threads[i]->Fork(Turnstile, (void *) &(values[i]));
     }
    
-    // Wait until all turnstile threads finish their work.  `Thread::Join` is
-    // not implemented at the beginning, therefore an ad-hoc workaround is
-    // applied here.
+    // Wait until all turnstile threads finish their work.  
     for (unsigned i = 0; i < NUM_TURNSTILES; i++) {
-        while (!done[i]) {
-            currentThread->Yield();
-        }
+        threads[i]->Join();
     }
 
     printf("All turnstiles finished. Final count is %u (should be %u).\n",
@@ -70,6 +67,7 @@ ThreadTestGardenSem()
     for (unsigned i = 0; i < NUM_TURNSTILES; i++) {
 	delete[] names[i];
     }
+    delete []threads;
     delete []values;
     delete []names;
 }

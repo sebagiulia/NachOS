@@ -9,7 +9,6 @@
 #define M 1
 #define N 1
 #define BUFFER_LEN 3
-bool done[2]; // Banderas para indicar el final de los hilos(solo valido para un productor y un consumidor)
 
 int buffer[BUFFER_LEN];
 int pos = 0;
@@ -36,7 +35,6 @@ static void prod_f(void *name)
         non_empty_buffer_cond.Signal();
         pos_lock.Release();
     }
-    done[0] = true;
 }
 
 static void cons_f(void *name)
@@ -55,32 +53,38 @@ static void cons_f(void *name)
         non_full_buffer_cond.Signal();
         pos_lock.Release();
     }
-    done[1] = true;
 }
 
 void ThreadTestProdCons() {
     char **pnames = new char*[M];
     char **cnames = new char*[N];
-    done[0] = done[1] = false;
-
+    Thread **prod = new Thread*[M];
+    Thread **con = new Thread*[N];
     int i;
 	for (i = 0; i < M; i++){
         pnames[i] = new char[10];
         sprintf(pnames[i], "Productor %d", i);
-        Thread *p = new Thread(pnames[i]);
-		p->Fork(prod_f, pnames[i]);
+        prod[i] = new Thread(pnames[i], true);
+		prod[i]->Fork(prod_f, pnames[i]);
     }
 
     for (i = 0; i < N; i++){
         cnames[i] = new char[10];
         sprintf(cnames[i], "Consumidor %d", i);
-        Thread *c = new Thread(cnames[i]);
-		c->Fork(cons_f, cnames[i]);
+        con[i] = new Thread(cnames[i], true);
+		con[i]->Fork(cons_f, cnames[i]);
     }
 
-    while(!(done[0] && done[1])) {
-        currentThread->Yield();
-    };
+    for(i = 0; i < M; i++){
+        prod[i]->Join();
+    }
+
+    for(i = 0; i < N; i++){
+        con[i]->Join();
+    }
+
+    delete [] prod;
+    delete [] con;
 
     for (unsigned j = 0; j < M; j++) {
 	    delete[] pnames[j];

@@ -38,16 +38,16 @@
 #ifndef NACHOS_THREADS_THREAD__HH
 #define NACHOS_THREADS_THREAD__HH
 
-
 #include "lib/utility.hh"
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
 #endif
-
 #include <stdint.h>
 
+class Channel;
+#include "channel.hh"
 
 /// CPU register state to be saved on context switch.
 ///
@@ -71,7 +71,6 @@ enum ThreadStatus {
     BLOCKED,
     NUM_THREAD_STATUS
 };
-
 /// The following class defines a “thread control block” -- which represents
 /// a single thread of execution.
 ///
@@ -97,7 +96,7 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName);
+    Thread(const char *debugName, bool willJoin = false);
 
     /// Deallocate a Thread.
     ///
@@ -106,6 +105,9 @@ public:
     ~Thread();
 
     /// Basic thread operations.
+    
+    //The thread that calls this function will wait until this thread finishes.
+    void Join();
 
     /// Make thread run `(*func)(arg)`.
     void Fork(VoidFunctionPtr func, void *arg);
@@ -138,9 +140,8 @@ private:
 
     /// Ready, running or blocked.
     ThreadStatus status;
-
+    Channel *channel;
     const char *name;
-
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
 

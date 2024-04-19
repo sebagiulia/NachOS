@@ -16,11 +16,9 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
 #include "thread.hh"
 #include "switch.h"
 #include "system.hh"
-
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -40,12 +38,16 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName)
+Thread::Thread(const char *threadName, bool willJoin)
 {
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
+    if(willJoin){
+        channel = new Channel("join channel");
+    }
+    else channel = nullptr;
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
@@ -69,6 +71,17 @@ Thread::~Thread()
                                        STACK_SIZE * sizeof *stack);
     }
 }
+
+//The thread that calls this function will wait until this thread finishes.
+    void Thread::Join(){
+        DEBUG('t',"Thread \"%s\" calling Join on thread \"%s\" \n",currentThread->GetName(), name);
+        ASSERT(currentThread != this);
+        ASSERT(channel != nullptr);
+        int dummy;
+        channel->Receive(&dummy);
+    }
+
+
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
 /// concurrently.
@@ -159,7 +172,9 @@ Thread::Finish()
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
-
+    if(channel != nullptr){ 
+        channel->Send(0);
+    }
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.
     // Not reached.

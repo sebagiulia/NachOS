@@ -1,19 +1,25 @@
 #ifndef NACHOS_THREADS_CHANNEL__HH
 #define NACHOS_THREADS_CHANNEL__HH
 
+class Condition;
+class Lock;
 #include "condition.hh"
+
 
 class Channel {
 public:
 
-    /// Constructor: indicate which lock the condition variable belongs to.
     Channel(const char *debugNam);
 
     ~Channel();
 
     const char *GetName() const;
-
+    
+    //Recibir un mensaje del canal, es bloqueante.
     void Receive(int *message);
+
+    //Enviar un mensaje al canal, el thread quedará bloqueado hasta que otro
+    //thread ejecute un send.
     void Send(int message);
 
 private:

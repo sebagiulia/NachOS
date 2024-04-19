@@ -17,7 +17,7 @@
 #ifndef NACHOS_THREADS_CONDITION__HH
 #define NACHOS_THREADS_CONDITION__HH
 
-
+class Semaphore;
 #include "lock.hh"
 
 

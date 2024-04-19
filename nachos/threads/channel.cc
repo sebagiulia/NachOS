@@ -5,8 +5,8 @@ Channel::Channel(const char *debugName)
 {
     name = debugName;
     l = new Lock("lockChannel");
-    cond_read = new Condition("cr", l);
-    cond_write = new Condition("cw", l);
+    cond_read = new Condition("cond_read", l);
+    cond_write = new Condition("cond_write", l);
     msj = -1;
     concurrido = 0;
     waiting = false;
@@ -34,7 +34,7 @@ void Channel::Receive(int *message)
     cond_write->Wait();
   }
   *message = msj;
-  DEBUG('p', "Thread \"%s\" receiving %d on channel \"%s\" \n", currentThread->GetName(), msj, name);
+  DEBUG('c', "Thread \"%s\" receiving %d on channel \"%s\" \n", currentThread->GetName(), msj, name);
   concurrido--;
   waiting = false;
   cond_read->Signal();
@@ -48,7 +48,7 @@ void Channel::Send(int message)
     cond_read->Wait();
   }
   msj = message;
-  DEBUG('p', "Thread \"%s\" sending %d on channel \"%s\" \n", currentThread->GetName(), msj, name);
+  DEBUG('c', "Thread \"%s\" sending %d on channel \"%s\" \n", currentThread->GetName(), msj, name);
   waiting = true;
   cond_write->Signal();
   l->Release();

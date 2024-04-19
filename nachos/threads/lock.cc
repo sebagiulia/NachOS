@@ -17,6 +17,9 @@
 #include <stdio.h>
 #include "lock.hh"
 #include "lib/utility.hh"
+
+class Thread;
+#include "thread.hh"
 #include "system.hh"
 /// Dummy functions -- so we can compile our later assignments.
 

@@ -52,10 +52,10 @@ SimpleThread(void *name_)
 void
 ThreadTestSimple()
 {
-    Thread *newThread2 = new Thread("2nd");
-    Thread *newThread3 = new Thread("3rd");
-    Thread *newThread4 = new Thread("4th");
-    Thread *newThread5 = new Thread("5th");
+    Thread *newThread2 = new Thread("2nd", true);
+    Thread *newThread3 = new Thread("3rd", true);
+    Thread *newThread4 = new Thread("4th", true);
+    Thread *newThread5 = new Thread("5th", true);
     newThread2->Fork(SimpleThread, NULL);
     newThread3->Fork(SimpleThread, NULL);
     newThread4->Fork(SimpleThread, NULL);
@@ -65,8 +65,10 @@ ThreadTestSimple()
     SimpleThread(NULL);
 
    //Wait for the threads to finish if needed
-    while (!(threads[0] && threads[1] && threads[2] && threads[3])) {
-        currentThread->Yield(); 
-    }
+    newThread2->Join();
+    newThread3->Join();
+    newThread4->Join();
+    newThread5->Join();
+    
     printf("Test finished\n");
 }
