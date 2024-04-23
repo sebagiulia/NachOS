@@ -96,9 +96,9 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName, bool willJoin = false);
+    Thread(const char *debugName, bool willJoin = false, int prior = 4);
 
-    /// Deallocate a Thread.
+    /// Deallocate a Thread.	
     ///
     /// NOTE: thread being deleted must not be running when `delete` is
     /// called.
@@ -127,9 +127,13 @@ public:
     void SetStatus(ThreadStatus st);
 
     const char *GetName() const;
-
+    
     void Print() const;
 
+    void ChangePriority(int p);
+
+    int GetOriginalPriority();
+    int GetPriority();
 private:
     // Some of the private data for this class is listed above.
 
@@ -144,6 +148,9 @@ private:
     const char *name;
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
+
+    int priority;
+    int originalPriority;
 
 #ifdef USER_PROGRAM
     /// User-level CPU register state.

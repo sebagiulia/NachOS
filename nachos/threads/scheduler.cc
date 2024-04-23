@@ -24,22 +24,28 @@
 #include <stdio.h>
 
 
-/// Initialize the list of ready but not running threads to empty.
-Scheduler::Scheduler()
+/// Initialize the multi queue of ready but not running threads to empty.
+Scheduler::Scheduler(int priorities)
 {
-    readyList = new List<Thread *>;
+    readyMultiQueue = new List<Thread *>* [priorities];
+    for(int i = 0; i < priorities; i++)
+        readyMultiQueue[i] = new List<Thread *>; 
+    numberOfPriorities = priorities;
 }
 
-/// De-allocate the list of ready threads.
+/// De-allocate the multi queue of ready threads.
 Scheduler::~Scheduler()
 {
-    delete readyList;
+    for(int i = 0; i < numberOfPriorities; i++)
+    	delete readyMultiQueue[i];
+    delete readyMultiQueue;
+    
 }
 
 /// Mark a thread as ready, but not running.
-/// Put it on the ready list, for later scheduling onto the CPU.
+/// Put it on the ready multiqueue, for later scheduling onto the CPU.
 ///
-/// * `thread` is the thread to be put on the ready list.
+/// * `thread` is the thread to be put on the ready multiqueue.
 void
 Scheduler::ReadyToRun(Thread *thread)
 {
@@ -48,18 +54,24 @@ Scheduler::ReadyToRun(Thread *thread)
     DEBUG('t', "Putting thread %s on ready list\n", thread->GetName());
 
     thread->SetStatus(READY);
-    readyList->Append(thread);
+    int p = thread->GetPriority();
+    readyMultiQueue[p]->Append(thread);
 }
 
 /// Return the next thread to be scheduled onto the CPU.
 ///
 /// If there are no ready threads, return null.
 ///
-/// Side effect: thread is removed from the ready list.
+/// Side effect: thread is removed from the ready multiqueue.
 Thread *
 Scheduler::FindNextToRun()
 {
-    return readyList->Pop();
+    for(int i = numberOfPriorities; i > 0; i--){
+        if(!readyMultiQueue[i-1]->IsEmpty())
+	        return readyMultiQueue[i-1]->Pop();	    
+        }
+
+    return nullptr;
 }
 
 /// Dispatch the CPU to `nextThread`.
@@ -138,6 +150,16 @@ ThreadPrint(Thread *t)
 void
 Scheduler::Print()
 {
-    printf("Ready list contents:\n");
-    readyList->Apply(ThreadPrint);
+    printf("Ready queue contents:\n");
+    for(int i = numberOfPriorities; i > 0; i--)
+    	readyMultiQueue[i-1]->Apply(ThreadPrint);
+}
+
+void
+Scheduler::UpdateReadyMultiQueue(Thread *thread, int newPriority)
+{
+    const int oldPriority = thread->GetPriority();
+    readyMultiQueue[oldPriority]->Remove(thread);
+    readyMultiQueue[newPriority]->Append(thread);
+    thread->ChangePriority(newPriority);
 }
