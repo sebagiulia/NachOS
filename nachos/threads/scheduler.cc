@@ -55,6 +55,7 @@ Scheduler::ReadyToRun(Thread *thread)
 
     thread->SetStatus(READY);
     int p = thread->GetPriority();
+    ASSERT(p >= 0 && p < numberOfPriorities);
     readyMultiQueue[p]->Append(thread);
 }
 
