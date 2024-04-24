@@ -14,6 +14,25 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
+
+/* Inversion de prioridades:
+
+    Para el caso del problema de inversión de prioridades implementamos herencia de prioridades.
+    Cuando un proceso P1 quiere tomar un lock ya tomado por otro P2, se evalúa cual tiene mayor
+    prioridad, si la de P1 es mayor, se la "hereda" a P2, sino, se mantienen los valores actuales.
+    Si ocurrió el primer caso, cuando el proceso P2 suelta el lock, su prioridad vuelve a su estado
+    original.
+
+    Inversión de prioridades en semáforos:
+
+    No es posible solucionar el problema de inversión de prioridades en semáforos ya que no sabemos
+    cual de todos los procesos es el encargado de levantar el contador del semáforo con V() y por
+    ende no sabemos a cual aumentarle la prioridad para acelerar su ejecución. Esto no ocurre con
+    locks ni con variables de condidicion ya que en estos últimos solo hay un proceso capaz de
+    liberar el bloqueo, que es al cual le modificamos la prioridad.
+
+*/
+
 #include <stdio.h>
 #include "lock.hh"
 #include "lib/utility.hh"
