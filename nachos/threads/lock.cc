@@ -68,7 +68,7 @@ Lock::Acquire()
     if(owner && owner->GetPriority() < currentThread->GetPriority()){
         IntStatus oldLevel = interrupt->SetLevel(INT_OFF);
         scheduler->UpdateReadyMultiQueue(owner, currentThread->GetPriority());
-        DEBUG('s', "Thread \"%s\" inherited priority of Thread\"%s\" \n", owner->GetName(), currentThread->GetName());
+        DEBUG('s', "Thread \"%s\" inherited priority of Thread \"%s\" \n", owner->GetName(), currentThread->GetName());
         interrupt->SetLevel(oldLevel);
     } 
 
@@ -88,11 +88,14 @@ Lock::Release()
         IntStatus oldLevel = interrupt->SetLevel(INT_OFF);
         DEBUG('s', "Thread \"%s\" retaking its original priority \n", owner->GetName());
         scheduler->UpdateReadyMultiQueue(owner, owner->GetOriginalPriority());
+        owner = nullptr;
+        sem->V();
         interrupt->SetLevel(oldLevel);
+    } else {
+        owner = nullptr;
+        sem->V();
     }
 
-    owner = nullptr;
-    sem->V();
     DEBUG('s', "Thread \"%s\" released lock \"%s\" \n", currentThread->GetName(), name);
     }
 
