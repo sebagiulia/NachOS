@@ -62,14 +62,14 @@ void ThreadTestProdCons() {
     Thread **con = new Thread*[N];
     int i;
 	for (i = 0; i < M; i++){
-        pnames[i] = new char[10];
+        pnames[i] = new char[16];
         sprintf(pnames[i], "Productor %d", i);
         prod[i] = new Thread(pnames[i], true);
 		prod[i]->Fork(prod_f, pnames[i]);
     }
 
     for (i = 0; i < N; i++){
-        cnames[i] = new char[10];
+        cnames[i] = new char[16];
         sprintf(cnames[i], "Consumidor %d", i);
         con[i] = new Thread(cnames[i], true);
 		con[i]->Fork(cons_f, cnames[i]);

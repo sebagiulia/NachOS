@@ -38,14 +38,14 @@ void ThreadTestProdConsChannel() {
     Thread **cons = new Thread*[NC];
     int i;
 	for (i = 0; i < MC; i++){
-        pnames[i] = new char[10];
+        pnames[i] = new char[16];
         sprintf(pnames[i], "Productor %d", i);
         prods[i] = new Thread(pnames[i], true, i);
         prods[i]->Fork(prod_c, pnames[i]);
     }
 
     for (i = 0; i < NC; i++){
-        cnames[i] = new char[10];
+        cnames[i] = new char[16];
         sprintf(cnames[i], "Consumidor %d", i);
         cons[i] = new Thread(cnames[i], true, i);
 		cons[i]->Fork(cons_c, cnames[i]);
