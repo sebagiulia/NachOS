@@ -93,6 +93,8 @@ SyscallHandler(ExceptionType _et)
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);  // Return error code.
+                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -100,10 +102,50 @@ SyscallHandler(ExceptionType _et)
                                     filename, sizeof filename)) {
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);  // Return error code.
+                break;
             }
 
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
+            if (!fileSystem->Create(filename, 4095)){
+                DEBUG('e', "Error: failed to create file `%s`.\n", filename);
+                machine->WriteRegister(2, -1);  // Return error code.
+            }
+            else {
+                DEBUG('e', "Created file `%s`.\n", filename);
+                machine->WriteRegister(2, 0); //Return success code.
+            }
             break;
+        }
+
+        case SC_REMOVE: {
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);  // Return error code.
+                break;
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);  // Return error code.
+                break;
+            }
+
+            DEBUG('e', "`Remove` requested for file `%s`.\n", filename);
+            if (!fileSystem->Remove(filename)){
+                DEBUG('e', "Error: file `%s` not found.\n", filename);
+                machine->WriteRegister(2, -1);  // Return error code.
+            }
+            else {
+                DEBUG('e', "Removed file `%s`.\n", filename);
+                machine->WriteRegister(2, 0); //Return success code.
+            }
+            break;
+
         }
 
         case SC_CLOSE: {
@@ -111,7 +153,12 @@ SyscallHandler(ExceptionType _et)
             DEBUG('e', "`Close` requested for id %u.\n", fid);
             break;
         }
-
+        
+        case SC_EXIT: {
+            int status = machine->ReadRegister(4);
+            DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);
+            currentThread->Finish();
+        }
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);
             ASSERT(false);
