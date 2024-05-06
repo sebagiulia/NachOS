@@ -52,6 +52,10 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
           // set its pages to be read-only.
     }
 
+    openFilesTable = new Table<OpenFile*>;
+    openFilesTable->Add(nullptr);
+    openFilesTable->Add(nullptr);
+
     char *mainMemory = machine->mainMemory;
 
     // Zero out the entire address space, to zero the unitialized data
@@ -82,6 +86,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 AddressSpace::~AddressSpace()
 {
     delete [] pageTable;
+    delete openFilesTable;
 }
 
 /// Set the initial values for the user-level register set.

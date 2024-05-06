@@ -118,6 +118,48 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        case SC_OPEN: {
+          int filenameAddr = machine->ReadRegister(4);
+          if (filenameAddr == 0) {
+              DEBUG('e', "Error: address to filename string is null.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+          }
+
+          char filename[FILE_NAME_MAX_LEN + 1];
+          if (!ReadStringFromUser(filenameAddr,
+                                  filename, sizeof filename)) {
+              DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                    FILE_NAME_MAX_LEN);
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+          }
+
+          DEBUG('e', "`Open` requested for file `%s`.\n", filename);
+          OpenFile* openFile = fileSystem->Open(filename);
+          if (!openFile){
+              DEBUG('e', "Error: failed to open file `%s`.\n", filename);
+              machine->WriteRegister(2, -1);  // Return error code.
+          }
+          else {
+              DEBUG('e', "Opened file `%s`.\n", filename);
+          }
+
+          int fid = currentThread->space->openFilesTable->Add(openFile);
+          if (fid == -1) {
+              DEBUG('e', "Error: failed to add open file `%s` to the open files table.\n", filename);
+              delete openFile;
+              DEBUG('e', "Closed file %u.\n", filename);
+              machine->WriteRegister(2, -1);  // Return error code.
+          }
+          else {
+              DEBUG('e', "Added file `%s` to the open files table.\n", filename);
+              machine->WriteRegister(2, fid); //Return success code.
+          }
+
+          break;
+        }
+
         case SC_REMOVE: {
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
@@ -150,14 +192,28 @@ SyscallHandler(ExceptionType _et)
 
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
+
             DEBUG('e', "`Close` requested for id %u.\n", fid);
+            if(fid == 0 || fid == 1) DEBUG('e', "Error: file id `%u` cannot be closed.\n", fid);
+            if(!currentThread->space->openFilesTable->HasKey(fid)) {
+                DEBUG('e', "Error: file id `%u` not found.\n", fid);
+                machine->WriteRegister(2, -1);  // Return error code.
+            }
+            else {
+              delete currentThread->space->openFilesTable->Get(fid);
+              DEBUG('e', "Closed file id `%u`.\n", fid);
+              currentThread->space->openFilesTable->Remove(fid);
+              DEBUG('e', "Removed file id `%u` from the open files table.\n", fid);
+              machine->WriteRegister(2, 0); // Return success code.
+            }
             break;
         }
-        
+
         case SC_EXIT: {
             int status = machine->ReadRegister(4);
             DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);
             currentThread->Finish();
+            break;
         }
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);
