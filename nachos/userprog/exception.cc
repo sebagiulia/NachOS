@@ -140,6 +140,7 @@ SyscallHandler(ExceptionType _et)
           if (!openFile){
               DEBUG('e', "Error: failed to open file `%s`.\n", filename);
               machine->WriteRegister(2, -1);  // Return error code.
+              break;
           }
           else {
               DEBUG('e', "Opened file `%s`.\n", filename);
@@ -194,10 +195,15 @@ SyscallHandler(ExceptionType _et)
             int fid = machine->ReadRegister(4);
 
             DEBUG('e', "`Close` requested for id %u.\n", fid);
-            if(fid == 0 || fid == 1) DEBUG('e', "Error: file id `%u` cannot be closed.\n", fid);
+            if(fid == 0 || fid == 1) {
+                DEBUG('e', "Error: file id `%u` cannot be closed.\n", fid);
+                machine->WriteRegister(2,-1);
+                break;
+            }
             if(!currentThread->space->openFilesTable->HasKey(fid)) {
                 DEBUG('e', "Error: file id `%u` not found.\n", fid);
                 machine->WriteRegister(2, -1);  // Return error code.
+                break;
             }
             else {
               delete currentThread->space->openFilesTable->Get(fid);
