@@ -24,8 +24,6 @@ const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
 
 class AddressSpace {
 public:
-    /// Open files table
-    Table<OpenFile*> *openFilesTable;
 
     /// Create an address space to run a user program.
     ///

@@ -52,6 +52,9 @@ Thread::Thread(const char *threadName, bool willJoin, int prior)
     priority = originalPriority = prior;
 #ifdef USER_PROGRAM
     space    = nullptr;
+    openFilesTable = new Table<OpenFile*>;
+    openFilesTable->Add(nullptr);
+    openFilesTable->Add(nullptr);
 #endif
 }
 
@@ -72,6 +75,9 @@ Thread::~Thread()
         SystemDep::DeallocBoundedArray((char *) stack,
                                        STACK_SIZE * sizeof *stack);
     }
+    #ifdef USER_PROGRAM
+    delete openFilesTable;
+    #endif
 }
 
 //The thread that calls this function will wait until this thread finishes.
@@ -196,7 +202,7 @@ Thread::Finish()
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
-    if(channel != nullptr){ 
+    if(channel != nullptr){
         channel->Send(0);
     }
     threadToBeDestroyed = currentThread;

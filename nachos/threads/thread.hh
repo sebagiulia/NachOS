@@ -98,14 +98,14 @@ public:
     /// Initialize a `Thread`.
     Thread(const char *debugName, bool willJoin = false, int prior = 4);
 
-    /// Deallocate a Thread.	
+    /// Deallocate a Thread.
     ///
     /// NOTE: thread being deleted must not be running when `delete` is
     /// called.
     ~Thread();
 
     /// Basic thread operations.
-    
+
     //The thread that calls this function will wait until this thread finishes.
     void Join();
 
@@ -127,7 +127,7 @@ public:
     void SetStatus(ThreadStatus st);
 
     const char *GetName() const;
-    
+
     void Print() const;
 
     void ChangePriority(int p);
@@ -167,6 +167,9 @@ public:
 
     // Restore user-level register state.
     void RestoreUserState();
+
+    /// Open files table
+    Table<OpenFile*> *openFilesTable;
 
     // User code this thread is running.
     AddressSpace *space;

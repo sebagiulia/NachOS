@@ -146,7 +146,7 @@ SyscallHandler(ExceptionType _et)
               DEBUG('e', "Opened file `%s`.\n", filename);
           }
 
-          int fid = currentThread->space->openFilesTable->Add(openFile);
+          int fid = currentThread->openFilesTable->Add(openFile);
           if (fid == -1) {
               DEBUG('e', "Error: failed to add open file `%s` to the open files table.\n", filename);
               delete openFile;
@@ -159,6 +159,132 @@ SyscallHandler(ExceptionType _et)
           }
 
           break;
+        }
+
+        case SC_WRITE: {
+          int bufferAddr = machine->ReadRegister(4);
+          int size = machine->ReadRegister(5);
+          int fid = machine->ReadRegister(6);
+
+          if (bufferAddr == 0) {
+              DEBUG('e', "Error: address to buffer is null.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+          }
+
+          if (size <= 0) {
+            DEBUG('e', "Error: invalid size.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          if (fid < 0) {
+            DEBUG('e', "Error: invalid file id.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          if (fid == CONSOLE_OUTPUT) {
+            DEBUG('e', "Error: can`t write on console output.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          if (fid == CONSOLE_INPUT) {
+            DEBUG('e', "Error: not implemented.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          char buffer[size];
+          ReadBufferFromUser(bufferAddr, buffer, size);
+
+          if(!currentThread->openFilesTable->HasKey(fid)) {
+            DEBUG('e', "Error: file id `%u` not found.\n", fid);
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+          else {
+            OpenFile *o = currentThread->openFilesTable->Get(fid);
+            if (o == nullptr) {
+              DEBUG('e', "Error: file not opened.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+            }
+            int cant = o->Write(buffer,size);
+            if (cant <= 0) {
+              DEBUG('e', "Error: couldn`t write on file.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+            }
+            DEBUG('e', "`Write` done on file `%u`.\n", fid);
+            machine->WriteRegister(2, cant); //Return success code.
+            break;
+          }
+
+        }
+
+        case SC_READ: {
+          int bufferAddr = machine->ReadRegister(4);
+          int size = machine->ReadRegister(5);
+          int fid = machine->ReadRegister(6);
+
+          if (bufferAddr == 0) {
+              DEBUG('e', "Error: address to buffer is null.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+          }
+
+          if (size <= 0) {
+            DEBUG('e', "Error: invalid size.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          if (fid < 0) {
+            DEBUG('e', "Error: invalid file id.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          if (fid == CONSOLE_INPUT) {
+            DEBUG('e', "Error: can`t read on console input.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          if (fid == CONSOLE_OUTPUT) {
+            DEBUG('e', "Error: not implemented.\n");
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+
+          char buffer[size];
+
+          if(!currentThread->openFilesTable->HasKey(fid)) {
+            DEBUG('e', "Error: file id `%u` not found.\n", fid);
+            machine->WriteRegister(2, -1);  // Return error code.
+            break;
+          }
+          else {
+            OpenFile *o = currentThread->openFilesTable->Get(fid);
+            if (o == nullptr) {
+              DEBUG('e', "Error: file not opened.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+            }
+            int cant = o->Read(buffer,size);
+            if (cant <= 0) {
+              DEBUG('e', "Error: couldn`t read on file.\n");
+              machine->WriteRegister(2, cant);  // Return error code.
+              break;
+            }
+            DEBUG('e', "`Read` done on file `%u`.\n", fid);
+            WriteBufferToUser(buffer, bufferAddr, size);
+            DEBUG('e',"buffer = %s.\n", buffer);
+            machine->WriteRegister(2, cant); //Return success code.
+            break;
+          }
         }
 
         case SC_REMOVE: {
@@ -194,22 +320,28 @@ SyscallHandler(ExceptionType _et)
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
 
-            DEBUG('e', "`Close` requested for id %u.\n", fid);
+            DEBUG('e', "`Close` requested for id %i.\n", fid);
+            if (fid < 0) {
+              DEBUG('e', "Error: invalid file id.\n");
+              machine->WriteRegister(2, -1);  // Return error code.
+              break;
+            }
+
             if(fid == 0 || fid == 1) {
-                DEBUG('e', "Error: file id `%u` cannot be closed.\n", fid);
+                DEBUG('e', "Error: file id `%i` cannot be closed.\n", fid);
                 machine->WriteRegister(2,-1);
                 break;
             }
-            if(!currentThread->space->openFilesTable->HasKey(fid)) {
-                DEBUG('e', "Error: file id `%u` not found.\n", fid);
+            if(!currentThread->openFilesTable->HasKey(fid)) {
+                DEBUG('e', "Error: file id `%i` not found.\n", fid);
                 machine->WriteRegister(2, -1);  // Return error code.
                 break;
             }
             else {
-              delete currentThread->space->openFilesTable->Get(fid);
-              DEBUG('e', "Closed file id `%u`.\n", fid);
-              currentThread->space->openFilesTable->Remove(fid);
-              DEBUG('e', "Removed file id `%u` from the open files table.\n", fid);
+              delete currentThread->openFilesTable->Get(fid);
+              DEBUG('e', "Closed file id `%i`.\n", fid);
+              currentThread->openFilesTable->Remove(fid);
+              DEBUG('e', "Removed file id `%i` from the open files table.\n", fid);
               machine->WriteRegister(2, 0); // Return success code.
             }
             break;
