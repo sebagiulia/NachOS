@@ -29,6 +29,7 @@ Statistics *stats;            ///< Performance metrics.
 Timer *timer;                 ///< The hardware timer device, for invoking
                               ///< context switches.
 
+
 #ifdef FILESYS_NEEDED
 FileSystem *fileSystem;
 #endif
@@ -38,6 +39,7 @@ SynchDisk *synchDisk;
 #endif
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
+SynchConsole *synchConsole;
 Machine *machine;  ///< User program memory and registers.
 #endif
 
@@ -189,7 +191,7 @@ Initialize(int argc, char **argv)
 
 #ifdef USER_PROGRAM
     Debugger *d = debugUserProg ? new Debugger : nullptr;
-    
+    synchConsole = new SynchConsole();
     machine = new Machine(d, numPhysicalPages);  // This must come first.
     SetExceptionHandlers();
 #endif

@@ -10,18 +10,18 @@ SynchConsole(const char *in = nullptr, const char *out = nullptr);
 
 ~SynchConsole();
 
-static void ReadAvail(void *arg);
+void ReadAvail();
 
-static void WriteDone(void *arg);
+void WriteDone();
 
 void PutChar(char ch);
 
 char GetChar();
 
 private: 
-Console *sConsole;
-static Semaphore *readAvail;
-static Semaphore *writeDone;
+Console *console;
+Semaphore *readAvail;
+Semaphore *writeDone;
 
 
 };

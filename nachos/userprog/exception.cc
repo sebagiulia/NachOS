@@ -194,13 +194,9 @@ SyscallHandler(ExceptionType _et)
           ReadBufferFromUser(bufferAddr, buffer, size);
 
           if (fid == CONSOLE_OUTPUT) {
-            /*
             for(int i = 0; i < size; i++){
             synchConsole->PutChar(buffer[i]);
-            }
-            */
-            DEBUG('e', "Error: not implemented.\n");
-            machine->WriteRegister(2, -1);  // Return error code.
+            }          
             break;
           }
 
@@ -262,17 +258,14 @@ SyscallHandler(ExceptionType _et)
           char buffer[size];
 
           if (fid == CONSOLE_INPUT) {
-            /*
-            for(int i = 0; i<size; i++){
+            int i = 0;
+            for(; i<size; i++){
               buffer[i] = synchConsole->GetChar();
             }
             
             WriteBufferToUser(buffer, bufferAddr, size);
             DEBUG('e',"buffer = %s.\n", buffer);
             machine->WriteRegister(2, i);
-            */
-            DEBUG('e', "Error: not implemented.\n");
-            machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
 
