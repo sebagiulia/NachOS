@@ -18,8 +18,6 @@ void PutChar(char ch);
 
 char GetChar();
 
-
-
 private: 
 Console *sConsole;
 static Semaphore *readAvail;

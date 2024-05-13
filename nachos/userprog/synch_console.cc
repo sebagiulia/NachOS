@@ -20,3 +20,13 @@ SynchConsole::~SynchConsole(){
     delete readAvail;
     delete writeDone;
 }
+
+char SynchConsole::GetChar(){
+    readAvail->P();
+    return sConsole->GetChar;
+}
+
+void SynchConsole::PutChar(char c){
+    sConsole->PutChar(c);
+    writeDone->P();
+}

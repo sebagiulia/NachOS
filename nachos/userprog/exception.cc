@@ -190,15 +190,21 @@ SyscallHandler(ExceptionType _et)
             break;
           }
 
+          char buffer[size];
+          ReadBufferFromUser(bufferAddr, buffer, size);
+
           if (fid == CONSOLE_OUTPUT) {
+            /*
+            for(int i = 0; i < size; i++){
+            synchConsole->PutChar(buffer[i]);
+            }
+            */
             DEBUG('e', "Error: not implemented.\n");
             machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
 
-          char buffer[size];
-          ReadBufferFromUser(bufferAddr, buffer, size);
-
+          
           if(!currentThread->openFilesTable->HasKey(fid)) {
             DEBUG('e', "Error: file id `%u` not found.\n", fid);
             machine->WriteRegister(2, -1);  // Return error code.
@@ -218,7 +224,7 @@ SyscallHandler(ExceptionType _et)
               break;
             }
             DEBUG('e', "`Write` done on file `%u`.\n", fid);
-            machine->WriteRegister(2, cant); //Return success code.
+            machine->WriteRegister(2, 0); //Return success code.
             break;
           }
 
@@ -252,14 +258,23 @@ SyscallHandler(ExceptionType _et)
             machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
+          
+          char buffer[size];
 
           if (fid == CONSOLE_INPUT) {
+            /*
+            for(int i = 0; i<size; i++){
+              buffer[i] = synchConsole->GetChar();
+            }
+            
+            WriteBufferToUser(buffer, bufferAddr, size);
+            DEBUG('e',"buffer = %s.\n", buffer);
+            machine->WriteRegister(2, i);
+            */
             DEBUG('e', "Error: not implemented.\n");
             machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
-
-          char buffer[size];
 
           if(!currentThread->openFilesTable->HasKey(fid)) {
             DEBUG('e', "Error: file id `%u` not found.\n", fid);
