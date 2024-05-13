@@ -15,14 +15,16 @@
 int
 main(void)
 {
-    Remove("test.txt");
-    //Create("test.txt");
+    //Remove("test.txt");
+    Create("test.txt");
     OpenFileId o = Open("test.txt");
     Write("Hello world\n\0",13,o);
     Close(o);
     o = Open("test.txt");
     char buffer[13];
+    o = 1;
     Read(buffer,13,o);
     Close(o);
+    Remove("test.txt");
     return 0;
 }

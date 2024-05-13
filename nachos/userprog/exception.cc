@@ -184,13 +184,13 @@ SyscallHandler(ExceptionType _et)
             break;
           }
 
-          if (fid == CONSOLE_OUTPUT) {
-            DEBUG('e', "Error: can`t write on console output.\n");
+          if (fid == CONSOLE_INPUT) {
+            DEBUG('e', "Error: can`t write on console input.\n");
             machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
 
-          if (fid == CONSOLE_INPUT) {
+          if (fid == CONSOLE_OUTPUT) {
             DEBUG('e', "Error: not implemented.\n");
             machine->WriteRegister(2, -1);  // Return error code.
             break;
@@ -247,13 +247,13 @@ SyscallHandler(ExceptionType _et)
             break;
           }
 
-          if (fid == CONSOLE_INPUT) {
-            DEBUG('e', "Error: can`t read on console input.\n");
+          if (fid == CONSOLE_OUTPUT) {
+            DEBUG('e', "Error: can`t read on console output.\n");
             machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
 
-          if (fid == CONSOLE_OUTPUT) {
+          if (fid == CONSOLE_INPUT) {
             DEBUG('e', "Error: not implemented.\n");
             machine->WriteRegister(2, -1);  // Return error code.
             break;
