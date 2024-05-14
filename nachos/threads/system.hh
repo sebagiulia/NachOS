@@ -15,7 +15,7 @@
 #include "machine/interrupt.hh"
 #include "machine/statistics.hh"
 #include "machine/timer.hh"
-#include "machine/synch_console.hh"
+#include "userprog/synch_console.hh"
 
 
 /// Initialization and cleanup routines.

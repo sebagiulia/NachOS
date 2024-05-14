@@ -22,8 +22,6 @@ private:
 Console *console;
 Semaphore *readAvail;
 Semaphore *writeDone;
-
-
 };
 
 
