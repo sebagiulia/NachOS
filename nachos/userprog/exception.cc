@@ -195,8 +195,10 @@ SyscallHandler(ExceptionType _et)
 
           if (fid == CONSOLE_OUTPUT) {
             for(int i = 0; i < size; i++){
-            synchConsole->PutChar(buffer[i]);
-            }          
+              synchConsole->PutChar(buffer[i]);
+            }  
+            DEBUG('e', "`Write` done on synch_console `%u`.\n", fid);
+            machine->WriteRegister(2, 0); // Return success code.        
             break;
           }
 
