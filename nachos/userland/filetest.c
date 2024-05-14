@@ -21,10 +21,12 @@ main(void)
     Write("Hello world\n\0",13,o);
     Close(o);
     o = Open("test.txt");
-    char buffer[13];
+    char buffer[50];
     o = 1;
     Read(buffer,13,o);
     Close(o);
     Remove("test.txt");
+    int r = Read(buffer, 50, 0);
+    Write(buffer, r, 1);
     return 0;
 }

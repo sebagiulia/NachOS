@@ -42,7 +42,6 @@ SynchConsole::~SynchConsole(){
 }
 
 char SynchConsole::GetChar(){
-
     readAvail->P();
     return console->GetChar();
 }
