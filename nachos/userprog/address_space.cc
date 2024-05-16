@@ -31,7 +31,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    ASSERT(numPages <= machine->GetNumPhysicalPages());
+    ASSERT(numPages <= machine->GetNumPhysicalPages()); // ---------------------------------- esto se puede hacer con bitmap y chequear el numero de paginas libres
       // Check we are not trying to run anything too big -- at least until we
       // have virtual memory.
 
@@ -44,7 +44,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
           // For now, virtual page number = physical page number.
-        pageTable[i].physicalPage = i; //---------------------------------- aca deberiamos hacer un bitmap phisycalMemo->Find() 
+        pageTable[i].physicalPage = i; //---------------------------------- aca deberiamos hacer un bitmap freeMap->Find() 
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -57,7 +57,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     // Zero out the entire address space, to zero the unitialized data
     // segment and the stack segment.
-    memset(mainMemory, 0, size);
+    memset(mainMemory, 0, size);                    // ------------------------ Aca deberiamos inicializar en 0 las paginas fisicas segun las virtuales
 
     // Then, copy in the code and data segments into memory.
     uint32_t codeSize = exe.GetCodeSize();
