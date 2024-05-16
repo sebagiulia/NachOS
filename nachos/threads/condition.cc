@@ -18,20 +18,24 @@
 #include "condition.hh"
 #include "thread.hh"
 #include "system.hh"
-
+#include <stdio.h>
+#include <string.h>
 /// Dummy functions -- so we can compile our later assignments.
 ///
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
     name = debugName;
     l = conditionLock;
-    s = new Semaphore("sem", 0);
+    nombre_sem = new char[8 + strlen(debugName)];
+    sprintf(nombre_sem, "sem of %s", debugName);
+    s = new Semaphore(nombre_sem, 0);
     count = 0;
 }
 
 Condition::~Condition()
 {
     delete s;
+    delete nombre_sem;
 }
 
 const char *

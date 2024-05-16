@@ -25,6 +25,9 @@ public:
 private:
 
     const char *name;
+    char *nombre_lock;
+    char *nombre_read;
+    char *nombre_write;
     Lock *l;
     Condition *cond_read, *cond_write;
     int msj;

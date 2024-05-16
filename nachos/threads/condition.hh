@@ -75,6 +75,7 @@ public:
 private:
 
     const char *name;
+    char *nombre_sem;
     // Other needed fields are to be added here.
     Lock *l;
     Semaphore *s;

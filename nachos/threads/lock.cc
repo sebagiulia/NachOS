@@ -34,6 +34,8 @@
 */
 
 #include <stdio.h>
+#include <string.h>
+
 #include "lock.hh"
 #include "lib/utility.hh"
 
@@ -46,12 +48,15 @@ Lock::Lock(const char *debugName)
 {
     name = debugName;
     owner = nullptr;
-    sem = new Semaphore("sem_lock",1);
+    nombre_sem = new char[8 + strlen(debugName)];
+    sprintf(nombre_sem, "sem of %s", debugName);
+    sem = new Semaphore(nombre_sem,1);
 }
 
 Lock::~Lock()
 {
     delete sem;
+    delete nombre_sem;
 }
 
 const char *

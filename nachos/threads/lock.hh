@@ -59,6 +59,7 @@ private:
     const char *name;
     Thread *owner;
     Semaphore *sem;
+    char *nombre_sem;
 };
 
 

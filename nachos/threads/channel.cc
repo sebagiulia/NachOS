@@ -1,12 +1,23 @@
 #include "channel.hh"
 #include "system.hh"
-
+#include <stdio.h>
+#include <string.h>
 Channel::Channel(const char *debugName)
 {
     name = debugName;
-    l = new Lock("lockChannel");
-    cond_read = new Condition("cond_read", l);
-    cond_write = new Condition("cond_write", l);
+
+    nombre_lock = new char[9 + strlen(debugName)];
+    sprintf(nombre_lock, "lock of %s", debugName);
+    l = new Lock(nombre_lock);
+
+    nombre_read = new char[14 + strlen(debugName)];
+    sprintf(nombre_read, "cond_read of %s", debugName);
+    cond_read = new Condition(nombre_read, l);
+
+    nombre_write = new char[16 + strlen(debugName)];
+    sprintf(nombre_write, "cond_write of %s", debugName);
+    cond_write = new Condition(nombre_write, l);
+
     msj = -1;
     concurrido = 0;
     waiting = false;
@@ -23,6 +34,9 @@ Channel::~Channel()
     delete cond_read;
     delete cond_write;
     delete l;
+    delete nombre_read;
+    delete nombre_lock;
+    delete nombre_write;
 }
 
 void Channel::Receive(int *message)
