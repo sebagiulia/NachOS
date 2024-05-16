@@ -21,7 +21,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     ASSERT(executable_file != nullptr);
 
     Executable exe (executable_file);
-    ASSERT(exe.CheckMagic());
+
+    ASSERT(exe.CheckMagic());     // -----------------------------------Un programa puede romper el so si no es noff(arreglar) --------------------------------------
 
     // How big is address space?
 
@@ -43,7 +44,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
           // For now, virtual page number = physical page number.
-        pageTable[i].physicalPage = i;
+        pageTable[i].physicalPage = i; //---------------------------------- aca deberiamos hacer un bitmap phisycalMemo->Find() 
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -65,13 +66,13 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         uint32_t virtualAddr = exe.GetCodeAddr();
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
               virtualAddr, codeSize);
-        exe.ReadCodeBlock(&mainMemory[virtualAddr], codeSize, 0);
+        exe.ReadCodeBlock(&mainMemory[virtualAddr], codeSize, 0); // ------------------------- aca deberiamos hacer alguna traduccion de virtualAddr a la memoria fisica y no acceder directamente.
     }
     if (initDataSize > 0) {
         uint32_t virtualAddr = exe.GetInitDataAddr();
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               virtualAddr, initDataSize);
-        exe.ReadDataBlock(&mainMemory[virtualAddr], initDataSize, 0);
+        exe.ReadDataBlock(&mainMemory[virtualAddr], initDataSize, 0); // ----------------------- lo mismo que arriba
     }
 
 }
