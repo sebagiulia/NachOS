@@ -22,11 +22,11 @@ main(void)
     Close(o);
     o = Open("test.txt");
     char buffer[50];
-    o = 1;
+    //o = 1;
     Read(buffer,13,o);
     Close(o);
     Remove("test.txt");
-    int r = Read(buffer, 50, 0);
-    Write(buffer, r, 1);
+    //int r = Read(buffer, 50, 0);
+    Write(buffer, 13, 1);
     return 0;
 }

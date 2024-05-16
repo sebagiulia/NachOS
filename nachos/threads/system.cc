@@ -11,6 +11,7 @@
 #ifdef USER_PROGRAM
 #include "userprog/debugger.hh"
 #include "userprog/exception.hh"
+#include "lib/bitmap.hh"
 #endif
 
 #include <stdlib.h>
@@ -41,6 +42,7 @@ SynchDisk *synchDisk;
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 SynchConsole *synchConsole;
 Machine *machine;  ///< User program memory and registers.
+Bitmap *memoryPages;
 #endif
 
 // External definition, to allow us to take a pointer to this function.
@@ -191,8 +193,9 @@ Initialize(int argc, char **argv)
 
 #ifdef USER_PROGRAM
     Debugger *d = debugUserProg ? new Debugger : nullptr;
-    synchConsole = new SynchConsole();
     machine = new Machine(d, numPhysicalPages);  // This must come first.
+    synchConsole = new SynchConsole();
+    memoryPages = new Bitmap(numPhysicalPages);
     SetExceptionHandlers();
 #endif
 

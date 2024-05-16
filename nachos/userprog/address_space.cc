@@ -9,20 +9,19 @@
 #include "address_space.hh"
 #include "executable.hh"
 #include "threads/system.hh"
-
+#include "lib/bitmap.hh"
 #include <string.h>
-
+#include <algorithm>
+extern Bitmap *memoryPages;
 
 /// First, set up the translation from program memory to physical memory.
-/// For now, this is really simple (1:1), since we are only uniprogramming,
-/// and we have a single unsegmented page table.
 AddressSpace::AddressSpace(OpenFile *executable_file)
 {
     ASSERT(executable_file != nullptr);
 
     Executable exe (executable_file);
 
-    ASSERT(exe.CheckMagic());     // -----------------------------------Un programa puede romper el so si no es noff(arreglar) --------------------------------------
+    ASSERT(exe.CheckMagic());     // -----Un programa puede romper el so si no es noff(arreglar) -Checkear en exec
 
     // How big is address space?
 
@@ -31,7 +30,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    ASSERT(numPages <= machine->GetNumPhysicalPages()); // ---------------------------------- esto se puede hacer con bitmap y chequear el numero de paginas libres
+      // ASSERT(numPages <= machine->GetNumPhysicalPages()); --> Está checkeado abajo
       // Check we are not trying to run anything too big -- at least until we
       // have virtual memory.
 
@@ -43,21 +42,27 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-          // For now, virtual page number = physical page number.
-        pageTable[i].physicalPage = i; //---------------------------------- aca deberiamos hacer un bitmap freeMap->Find() 
+        int physicalPage = memoryPages->Find();
+    //    DEBUG('a', "asigno a pagina virtual %d fisica %d\n", i, physicalPage);
+        if(physicalPage == -1){
+          DEBUG('a', "No space on memory to allocate the process.");
+          ASSERT(false);
+        }
+        pageTable[i].physicalPage = physicalPage;  
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
+        char *mainMemory = machine->mainMemory;
+        unsigned offset = physicalPage * PAGE_SIZE;
+        memset(mainMemory + offset, 0, PAGE_SIZE);                    
+
     }
 
     char *mainMemory = machine->mainMemory;
-
-    // Zero out the entire address space, to zero the unitialized data
-    // segment and the stack segment.
-    memset(mainMemory, 0, size);                    // ------------------------ Aca deberiamos inicializar en 0 las paginas fisicas segun las virtuales
+    memset(mainMemory, 0, size);                    
 
     // Then, copy in the code and data segments into memory.
     uint32_t codeSize = exe.GetCodeSize();
@@ -65,14 +70,33 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     if (codeSize > 0) {
         uint32_t virtualAddr = exe.GetCodeAddr();
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
-              virtualAddr, codeSize);
-        exe.ReadCodeBlock(&mainMemory[virtualAddr], codeSize, 0); // ------------------------- aca deberiamos hacer alguna traduccion de virtualAddr a la memoria fisica y no acceder directamente.
+                virtualAddr, codeSize);
+        uint32_t leido = 0;    
+        while(codeSize - leido> 0){
+            uint32_t PageNumber = virtualAddr / PAGE_SIZE;
+            uint32_t offset =  virtualAddr % PAGE_SIZE;
+            uint32_t physicalAddr = (pageTable[PageNumber].physicalPage * PAGE_SIZE)+offset;
+            uint32_t sizeToRead = std::min(codeSize-leido, PAGE_SIZE);
+            exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, leido);
+            leido+=sizeToRead;
+            virtualAddr+=sizeToRead;
+        }
     }
     if (initDataSize > 0) {
         uint32_t virtualAddr = exe.GetInitDataAddr();
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               virtualAddr, initDataSize);
-        exe.ReadDataBlock(&mainMemory[virtualAddr], initDataSize, 0); // ----------------------- lo mismo que arriba
+        uint32_t leido = 0;      
+        while(initDataSize - leido > 0){
+            uint32_t PageNumber = virtualAddr / PAGE_SIZE;
+            uint32_t offset =  virtualAddr % PAGE_SIZE;
+            uint32_t physicalAddr = (pageTable[PageNumber].physicalPage * PAGE_SIZE)+offset;
+            uint32_t sizeToRead = std::min(initDataSize, PAGE_SIZE);
+            exe.ReadDataBlock(&mainMemory[physicalAddr], initDataSize, leido);
+            leido+=sizeToRead;
+            virtualAddr+=sizeToRead;
+            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead); 
+        } 
     }
 
 }
@@ -82,6 +106,9 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+    for(unsigned i = 0; i < numPages; i++){
+      memoryPages->Clear(pageTable[i].physicalPage);
+    }
     delete [] pageTable;
 }
 
@@ -108,9 +135,9 @@ AddressSpace::InitRegisters()
     // Set the stack register to the end of the address space, where we
     // allocated the stack; but subtract off a bit, to make sure we do not
     // accidentally reference off the end!
-    machine->WriteRegister(STACK_REG, numPages * PAGE_SIZE - 16);
+    machine->WriteRegister(STACK_REG, pageTable[numPages-1].physicalPage * PAGE_SIZE - 16);
     DEBUG('a', "Initializing stack register to %u\n",
-          numPages * PAGE_SIZE - 16);
+          (pageTable[numPages-1].physicalPage + 1) * PAGE_SIZE - 16);
 }
 
 /// On a context switch, save any machine state, specific to this address
