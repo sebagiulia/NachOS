@@ -62,7 +62,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     }
 
     char *mainMemory = machine->mainMemory;
-    memset(mainMemory, 0, size);                    
 
     // Then, copy in the code and data segments into memory.
     uint32_t codeSize = exe.GetCodeSize();
