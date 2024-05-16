@@ -79,6 +79,9 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, leido);
             leido+=sizeToRead;
             virtualAddr+=sizeToRead;
+            if(sizeToRead == PAGE_SIZE){
+              pageTable[PageNumber].readOnly = true;
+            } 
         }
     }
     if (initDataSize > 0) {
@@ -90,7 +93,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
             uint32_t physicalAddr = (pageTable[PageNumber].physicalPage * PAGE_SIZE)+offset;
-            uint32_t sizeToRead = std::min(initDataSize, PAGE_SIZE);
+            uint32_t sizeToRead = std::min(initDataSize-leido, PAGE_SIZE);
             exe.ReadDataBlock(&mainMemory[physicalAddr], initDataSize, leido);
             leido+=sizeToRead;
             virtualAddr+=sizeToRead;
