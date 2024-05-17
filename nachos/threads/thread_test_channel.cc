@@ -59,7 +59,6 @@ void ThreadTestProdConsChannel() {
 
     delete [] prods;
     delete [] cons;
-
     for (unsigned j = 0; j < MC; j++) {
 	    delete[] pnames[j];
     }

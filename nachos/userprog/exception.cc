@@ -61,6 +61,24 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
+static void InitNewThread(void *space)
+{
+  currentThread->space = (AddressSpace *)space;
+ 	currentThread->space->InitRegisters();
+	currentThread->space->RestoreState();
+	machine->Run();
+  ASSERT(false);
+}
+
+unsigned StartNewProcess(OpenFile *exec)
+{
+	Thread *newThread = new Thread("child");
+	AddressSpace *space = new AddressSpace(exec);	
+  unsigned sid = getsid(); 
+  newThread->Fork(InitNewThread, space);	
+  return sid;
+}
+
 /// Handle a system call exception.
 ///
 /// * `et` is the kind of exception.  The list of possible exceptions is in
@@ -270,7 +288,7 @@ SyscallHandler(ExceptionType _et)
             }
             
             WriteBufferToUser(buffer, bufferAddr, i);
-            DEBUG('e',"buffer = %s", buffer);
+            DEBUG('e',"buffer readed\n", buffer);
             machine->WriteRegister(2, i);
             break;
           }
@@ -302,7 +320,7 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_REMOVE: {
-            int filenameAddr = machine->ReadRegister(4);
+             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);  // Return error code.
@@ -318,7 +336,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            DEBUG('e', "`Remove` requested for file `%s`.\n", filename);
+           DEBUG('e', "`Remove` requested for file `%s`.\n", filename);
             if (!fileSystem->Remove(filename)){
                 DEBUG('e', "Error: file `%s` not found.\n", filename);
                 machine->WriteRegister(2, -1);  // Return error code.
@@ -361,6 +379,37 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+	      case SC_EXEC: {
+	
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);  // Return error code.
+                break;
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);  // Return error code.
+                break;
+            }
+
+	   OpenFile *executable = fileSystem->Open(filename);
+	   if(executable == nullptr) {
+	   	DEBUG('e', "Unable to execute file %s", filename);
+		  machine->WriteRegister(2,-1);
+		  break;
+	   } 
+
+	   unsigned spaceid = StartNewProcess(executable);
+	   DEBUG('e', "Success: File %s executed.", filename);
+	   machine->WriteRegister(2, spaceid);
+     break;
+	}
+
         case SC_EXIT: {
             int status = machine->ReadRegister(4);
             DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);
@@ -375,6 +424,8 @@ SyscallHandler(ExceptionType _et)
 
     IncrementPC();
 }
+
+
 
 
 /// By default, only system calls have their own handler.  All other

@@ -16,17 +16,6 @@ int
 main(void)
 {
     //Remove("test.txt");
-    Create("test.txt");
-    OpenFileId o = Open("test.txt");
-    Write("Hello world\n\0",13,o);
-    Close(o);
-    o = Open("test.txt");
-    char buffer[50];
-    //o = 1;
-    Read(buffer,13,o);
-    Close(o);
-    Remove("test.txt");
-    //int r = Read(buffer, 50, 0);
-    Write(buffer, 13, 1);
+    Write("Hola Mundo", 10, 1);
     return 0;
 }

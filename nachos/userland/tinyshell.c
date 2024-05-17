@@ -22,7 +22,7 @@ main(void)
 
         if (i > 0) {
             newProc = Exec(buffer);
-            Join(newProc);
+            //Join(newProc);
         }
     }
 

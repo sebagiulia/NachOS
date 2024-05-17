@@ -38,6 +38,8 @@ extern Timer *timer;                 ///< The hardware alarm clock.
 #include "machine/machine.hh"
 extern Machine *machine;  // User program memory and registers.
 extern SynchConsole *synchConsole;
+extern unsigned lastsid;
+extern unsigned getsid();
 #endif
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.

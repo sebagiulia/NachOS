@@ -43,7 +43,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
         int physicalPage = memoryPages->Find();
-    //    DEBUG('a', "asigno a pagina virtual %d fisica %d\n", i, physicalPage);
+        DEBUG('a', "asigno a pagina virtual %d pagina fisica %d\n", i, physicalPage);
         if(physicalPage == -1){
           DEBUG('a', "No space on memory to allocate the process.");
           ASSERT(false);
@@ -137,9 +137,9 @@ AddressSpace::InitRegisters()
     // Set the stack register to the end of the address space, where we
     // allocated the stack; but subtract off a bit, to make sure we do not
     // accidentally reference off the end!
-    machine->WriteRegister(STACK_REG, (pageTable[numPages-1].physicalPage + 1) * PAGE_SIZE - 16);
+    machine->WriteRegister(STACK_REG, (pageTable[numPages-1].virtualPage + 1) * PAGE_SIZE - 16);
     DEBUG('a', "Initializing stack register to %u\n",
-          (pageTable[numPages-1].physicalPage + 1) * PAGE_SIZE - 16);
+          (pageTable[numPages-1].virtualPage + 1) * PAGE_SIZE - 16);
 }
 
 /// On a context switch, save any machine state, specific to this address

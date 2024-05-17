@@ -43,7 +43,13 @@ SynchDisk *synchDisk;
 SynchConsole *synchConsole;
 Machine *machine;  ///< User program memory and registers.
 Bitmap *memoryPages;
+unsigned lastsid;
+
+unsigned getsid() { return ++lastsid; }
+
 #endif
+
+
 
 // External definition, to allow us to take a pointer to this function.
 extern void Cleanup();
@@ -196,6 +202,7 @@ Initialize(int argc, char **argv)
     machine = new Machine(d, numPhysicalPages);  // This must come first.
     synchConsole = new SynchConsole();
     memoryPages = new Bitmap(numPhysicalPages);
+    lastsid = 0;
     SetExceptionHandlers();
 #endif
 

@@ -14,4 +14,11 @@
 void SetExceptionHandlers();
 
 
+// Initialize address-space of a new thread.
+static void InitNewThread(void *space);
+
+// Start a new process.
+unsigned StartNewProcess(OpenFile *exec);
+
+
 #endif
