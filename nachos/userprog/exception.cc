@@ -26,7 +26,7 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
-
+#include "exception.hh"
 #include <stdio.h>
 
 

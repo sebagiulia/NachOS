@@ -10,12 +10,15 @@
 
 
 #include "syscall.h"
-
+#include "lib.c"
 
 int
 main(void)
 {
-    //Remove("test.txt");
-    Write("Hola Mundo", 10, 1);
+    char *buffer = "HOLAsaa";
+    int k = atoi("901");
+    itoa(k, buffer);
+    putstr(buffer);
+    putstr("Holamundo");
     return 0;
 }
