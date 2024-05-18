@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "lib.c"
 
 
 int
@@ -22,7 +23,9 @@ main(void)
 
         if (i > 0) {
             newProc = Exec(buffer);
-            //Join(newProc);
+            if(!Join(newProc)) {
+                putstr("Error en Join");
+            } 
         }
     }
 

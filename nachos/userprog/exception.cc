@@ -72,10 +72,10 @@ static void InitNewThread(void *space)
 
 unsigned StartNewProcess(OpenFile *exec)
 {
-	Thread *newThread = new Thread("child");
-	AddressSpace *space = new AddressSpace(exec);	
-  unsigned sid = getsid(); 
-  newThread->Fork(InitNewThread, space);	
+	Thread *newThread = new Thread("child", true);
+  unsigned sid = processesTable->Add(newThread); 
+	AddressSpace *space = new AddressSpace(exec, sid);	
+  newThread->Fork(InitNewThread, space);
   return sid;
 }
 
@@ -410,9 +410,32 @@ SyscallHandler(ExceptionType _et)
      break;
 	}
 
+  case SC_JOIN: {
+    SpaceId sid = machine->ReadRegister(4);
+
+    if(sid < 0) {
+      DEBUG('e', "Invalid Space Identifier %d\n",sid);
+      machine->WriteRegister(2, -1);
+      break;
+    }
+
+    if(processesTable->HasKey(sid)) {
+      Thread *th = processesTable->Get(sid);
+      th->Join();
+    } else {
+      machine->WriteRegister(2, -1);
+    }
+    break;
+
+  }
+
         case SC_EXIT: {
             int status = machine->ReadRegister(4);
             DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);
+            
+
+            processesTable->Remove(currentThread->space->GetSid());
+            delete currentThread->space;
             currentThread->Finish();
             break;
         }

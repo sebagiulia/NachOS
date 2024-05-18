@@ -15,7 +15,7 @@
 extern Bitmap *memoryPages;
 
 /// First, set up the translation from program memory to physical memory.
-AddressSpace::AddressSpace(OpenFile *executable_file)
+AddressSpace::AddressSpace(OpenFile *executable_file, unsigned sident)
 {
     ASSERT(executable_file != nullptr);
 
@@ -25,6 +25,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     // How big is address space?
 
+    sid = sident;
     unsigned size = exe.GetSize() + USER_STACK_SIZE;
       // We need to increase the size to leave room for the stack.
     numPages = DivRoundUp(size, PAGE_SIZE);
@@ -159,4 +160,9 @@ AddressSpace::RestoreState()
 {
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
+}
+
+unsigned
+AddressSpace::GetSid() {
+  return sid;
 }

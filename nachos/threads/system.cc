@@ -43,9 +43,7 @@ SynchDisk *synchDisk;
 SynchConsole *synchConsole;
 Machine *machine;  ///< User program memory and registers.
 Bitmap *memoryPages;
-unsigned lastsid;
-
-unsigned getsid() { return ++lastsid; }
+Table<Thread *> *processesTable;
 
 #endif
 
@@ -202,8 +200,8 @@ Initialize(int argc, char **argv)
     machine = new Machine(d, numPhysicalPages);  // This must come first.
     synchConsole = new SynchConsole();
     memoryPages = new Bitmap(numPhysicalPages);
-    lastsid = 0;
     SetExceptionHandlers();
+    processesTable = new Table<Thread *>();
 #endif
 
 #ifdef FILESYS
