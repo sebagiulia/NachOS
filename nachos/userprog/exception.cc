@@ -423,7 +423,6 @@ SyscallHandler(ExceptionType _et)
 	}
 
       case SC_EXEC2: {
-                DEBUG('e', "Llamaron a Exec2\n");
                 int filenameAddr = machine->ReadRegister(4);
                 int argvAddr = machine->ReadRegister(5);
                 if (filenameAddr == 0) {
