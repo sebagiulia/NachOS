@@ -137,9 +137,9 @@ AddressSpace::InitRegisters()
     // Set the stack register to the end of the address space, where we
     // allocated the stack; but subtract off a bit, to make sure we do not
     // accidentally reference off the end!
-    machine->WriteRegister(STACK_REG, (pageTable[numPages-1].virtualPage + 1) * PAGE_SIZE - 16);
+    machine->WriteRegister(STACK_REG, (numPages) * PAGE_SIZE - 16);
     DEBUG('a', "Initializing stack register to %u\n",
-          (pageTable[numPages-1].virtualPage + 1) * PAGE_SIZE - 16);
+          (numPages) * PAGE_SIZE - 16);
 }
 
 /// On a context switch, save any machine state, specific to this address

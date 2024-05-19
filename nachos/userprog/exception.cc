@@ -21,7 +21,7 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
+#include "args.hh"
 #include "transfer.hh"
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
@@ -61,23 +61,33 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
-static void InitNewThread(void *space)
+static void InitNewThread(void *args)
 {
-  currentThread->space = (AddressSpace *)space;
- 	currentThread->space->InitRegisters();
+  currentThread->space->InitRegisters();
 	currentThread->space->RestoreState();
+  if(args != nullptr){
+      unsigned i = WriteArgs((char**)args);
+      int sp = machine->ReadRegister(STACK_REG);
+      machine->WriteRegister(4, i);
+      machine->WriteRegister(5, sp);
+      machine->WriteRegister(STACK_REG, sp-24);
+      }
+  else{
+    machine->WriteRegister(4, 0);
+  }
 	machine->Run();
   ASSERT(false);
 }
 
-unsigned StartNewProcess(OpenFile *exec)
+unsigned StartNewProcess(OpenFile *exec, char **args)
 {
   Thread *newThread = new Thread("child", true);
   unsigned sid = processesTable->Add(newThread); 
   newThread->sid = sid;
   currentThread->childList->Append(newThread);
 	AddressSpace *space = new AddressSpace(exec);	
-  newThread->Fork(InitNewThread, space);
+  newThread->space = space;
+  newThread->Fork(InitNewThread, args);
   return sid;
 }
 
@@ -406,11 +416,50 @@ SyscallHandler(ExceptionType _et)
               break;
             } 
 
-            unsigned spaceid = StartNewProcess(executable);
+            unsigned spaceid = StartNewProcess(executable,nullptr);
             DEBUG('e', "Success: File %s executed.\n", filename);
             machine->WriteRegister(2, spaceid);
             break;
 	}
+
+      case SC_EXEC2: {
+                DEBUG('e', "Llamaron a Exec2\n");
+                int filenameAddr = machine->ReadRegister(4);
+                int argvAddr = machine->ReadRegister(5);
+                if (filenameAddr == 0) {
+                    DEBUG('e', "Error: address to filename string is null.\n");
+                    machine->WriteRegister(2, -1);  // Return error code.
+                    break;
+                }
+                if (argvAddr == 0) {
+                    DEBUG('e', "Error: address to argv is null.\n");
+                    machine->WriteRegister(2, -1);  // Return error code.
+                    break;
+                }
+
+                char filename[FILE_NAME_MAX_LEN + 1];
+                if (!ReadStringFromUser(filenameAddr,
+                                        filename, sizeof filename)) {
+                    DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                          FILE_NAME_MAX_LEN);
+                    machine->WriteRegister(2, -1);  // Return error code.
+                    break;
+                }
+
+                OpenFile *executable = fileSystem->Open(filename);
+                if(executable == nullptr) {
+                  DEBUG('e', "Unable to execute file %s", filename);
+                  machine->WriteRegister(2,-1);
+                  break;
+                }
+
+                char **args = SaveArgs(argvAddr);
+
+                unsigned spaceid = StartNewProcess(executable, args);
+                DEBUG('e', "Success: File %s executed.\n", filename);
+                machine->WriteRegister(2, spaceid);
+                break;
+      }
 
   case SC_JOIN: {
             SpaceId sid = machine->ReadRegister(4);

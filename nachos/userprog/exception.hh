@@ -15,10 +15,10 @@ void SetExceptionHandlers();
 
 
 // Initialize address-space of a new thread.
-static void InitNewThread(void *space);
+static void InitNewThread(void *args);
 
 // Start a new process.
-unsigned StartNewProcess(OpenFile *exec);
+unsigned StartNewProcess(OpenFile *exec, char **args);
 
 
 #endif

@@ -13,9 +13,16 @@
 #include "lib.c"
 
 int
-main(void)
-{
-    for(int i=0; i < 1000000; i++);
+main(int argc, char **argv)
+{  
+   // for(int i = 0; i < 1000000; i++);
+    char buffer[10];
+    itoa(argc, buffer);
+    putstr(buffer);
+    if(argc <= 1) putstr("Me ejecutaron sin argumentos");
+    else{
+        putstr(argv[1]);
+    }
     putstr("Hola Mundo!");
     Exit(15);
 }
