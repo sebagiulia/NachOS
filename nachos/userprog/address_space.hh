@@ -35,8 +35,7 @@ public:
     /// Parameters:
     /// * `executable_file` is the open file that corresponds to the
     ///   program; it contains the object code to load into memory.
-    /// * `sid` space identifier.
-    AddressSpace(OpenFile *executable_file, unsigned sid);
+    AddressSpace(OpenFile *executable_file);
 
     /// De-allocate an address space.
     ~AddressSpace();
@@ -49,8 +48,6 @@ public:
     void SaveState();
     void RestoreState();
 
-    unsigned GetSid(); 
-
     int GetExitStatus();
     void SetExitStatus(int status);
 
@@ -58,9 +55,6 @@ private:
 
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
-
-    // Space identifier.
-    unsigned sid;
 
     /// Number of pages in the virtual address space.
     unsigned numPages;

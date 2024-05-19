@@ -72,10 +72,11 @@ static void InitNewThread(void *space)
 
 unsigned StartNewProcess(OpenFile *exec)
 {
-	Thread *newThread = new Thread("child", true);
+  Thread *newThread = new Thread("child", true);
   unsigned sid = processesTable->Add(newThread); 
+  newThread->sid = sid;
   currentThread->childList->Append(newThread);
-	AddressSpace *space = new AddressSpace(exec, sid);	
+	AddressSpace *space = new AddressSpace(exec);	
   newThread->Fork(InitNewThread, space);
   return sid;
 }
@@ -398,41 +399,41 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-	   OpenFile *executable = fileSystem->Open(filename);
-	   if(executable == nullptr) {
-	   	DEBUG('e', "Unable to execute file %s", filename);
-		  machine->WriteRegister(2,-1);
-		  break;
-	   } 
+            OpenFile *executable = fileSystem->Open(filename);
+            if(executable == nullptr) {
+              DEBUG('e', "Unable to execute file %s", filename);
+              machine->WriteRegister(2,-1);
+              break;
+            } 
 
-	   unsigned spaceid = StartNewProcess(executable);
-	   DEBUG('e', "Success: File %s executed.\n", filename);
-	   machine->WriteRegister(2, spaceid);
-     break;
+            unsigned spaceid = StartNewProcess(executable);
+            DEBUG('e', "Success: File %s executed.\n", filename);
+            machine->WriteRegister(2, spaceid);
+            break;
 	}
 
   case SC_JOIN: {
-    SpaceId sid = machine->ReadRegister(4);
+            SpaceId sid = machine->ReadRegister(4);
 
-    if(sid < 0) {
-      DEBUG('e', "Invalid Space Identifier %d\n",sid);
-      machine->WriteRegister(2, -1);
-      break;
-    }
+            if(sid < 0) {
+              DEBUG('e', "Invalid Space Identifier %d\n",sid);
+              machine->WriteRegister(2, -1);
+              break;
+            }
 
-    if(processesTable->HasKey(sid)) {
-      Thread *th = processesTable->Get(sid);
-      currentThread->childList->Remove(th);
-      DEBUG('e', "Thread %s Join to thread %s.\n", currentThread->GetName(), th->GetName());
-      int exitstatus = 0;
-      th->Join(&exitstatus);
-      DEBUG('e', "Thread %s finished with state: %d\n", th->GetName(), exitstatus);
-      machine->WriteRegister(2, exitstatus);
-    } else {
-      DEBUG('e', "Invalid space id.\n");
-      machine->WriteRegister(2, -1);
-    }
-    break;
+            if(processesTable->HasKey(sid)) {
+              Thread *th = processesTable->Get(sid);
+              currentThread->childList->Remove(th);
+              DEBUG('e', "Thread %s Join to thread %s.\n", currentThread->GetName(), th->GetName());
+              int exitstatus = 0;
+              th->Join(&exitstatus);
+              DEBUG('e', "Thread %s finished with state: %d\n", th->GetName(), exitstatus);
+              machine->WriteRegister(2, exitstatus);
+            } else {
+              DEBUG('e', "Invalid space id.\n");
+              machine->WriteRegister(2, -1);
+            }
+            break;
 
   }
 

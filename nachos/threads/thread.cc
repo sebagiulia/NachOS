@@ -203,13 +203,14 @@ Thread::Finish(int exitstatus)
 {
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
-
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
+        #ifdef USER_PROGRAM
+            delete currentThread->space;
+        #endif
     if(channel != nullptr){
         channel->Send(exitstatus);
         #ifdef USER_PROGRAM
-            processesTable->Remove(currentThread->space->GetSid());
-            delete currentThread->space;
+            processesTable->Remove(currentThread->sid);
         #endif
     }
     threadToBeDestroyed = currentThread;

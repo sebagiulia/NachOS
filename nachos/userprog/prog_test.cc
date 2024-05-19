@@ -31,7 +31,9 @@ StartProcess(const char *filename)
         return;
     }
 
-    AddressSpace *space = new AddressSpace(executable, 0);
+    AddressSpace *space = new AddressSpace(executable);
+    unsigned sid = processesTable->Add(currentThread); 
+    currentThread->sid = sid;
     currentThread->space = space;
 
     delete executable;

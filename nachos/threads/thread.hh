@@ -178,6 +178,10 @@ public:
 
     // User code this thread is running.
     AddressSpace *space;
+
+    // Space identifier.
+    unsigned sid;
+
 #endif
 };
 
