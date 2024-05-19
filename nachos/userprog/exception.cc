@@ -300,7 +300,6 @@ SyscallHandler(ExceptionType _et)
             }
             
             WriteBufferToUser(buffer, bufferAddr, i);
-            DEBUG('e',"buffer readed\n", buffer);
             machine->WriteRegister(2, i);
             break;
           }
