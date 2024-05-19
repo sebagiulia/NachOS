@@ -51,6 +51,9 @@ public:
 
     unsigned GetSid(); 
 
+    int GetExitStatus();
+    void SetExitStatus(int status);
+
 private:
 
     /// Assume linear page table translation for now!

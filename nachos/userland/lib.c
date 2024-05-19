@@ -45,3 +45,9 @@ void putstr(const char *str){
     Write(str, n, 1);
     Write("\n",1,1);
 }
+
+//print, escribe str en la consola.
+void print(const char *str) {
+    unsigned n = strlen(str);
+    Write(str, n, 1);
+}

@@ -74,6 +74,7 @@ unsigned StartNewProcess(OpenFile *exec)
 {
 	Thread *newThread = new Thread("child", true);
   unsigned sid = processesTable->Add(newThread); 
+  currentThread->childList->Append(newThread);
 	AddressSpace *space = new AddressSpace(exec, sid);	
   newThread->Fork(InitNewThread, space);
   return sid;
@@ -405,7 +406,7 @@ SyscallHandler(ExceptionType _et)
 	   } 
 
 	   unsigned spaceid = StartNewProcess(executable);
-	   DEBUG('e', "Success: File %s executed.", filename);
+	   DEBUG('e', "Success: File %s executed.\n", filename);
 	   machine->WriteRegister(2, spaceid);
      break;
 	}
@@ -421,8 +422,14 @@ SyscallHandler(ExceptionType _et)
 
     if(processesTable->HasKey(sid)) {
       Thread *th = processesTable->Get(sid);
-      th->Join();
+      currentThread->childList->Remove(th);
+      DEBUG('e', "Thread %s Join to thread %s.\n", currentThread->GetName(), th->GetName());
+      int exitstatus = 0;
+      th->Join(&exitstatus);
+      DEBUG('e', "Thread %s finished with state: %d\n", th->GetName(), exitstatus);
+      machine->WriteRegister(2, exitstatus);
     } else {
+      DEBUG('e', "Invalid space id.\n");
       machine->WriteRegister(2, -1);
     }
     break;
@@ -431,12 +438,13 @@ SyscallHandler(ExceptionType _et)
 
         case SC_EXIT: {
             int status = machine->ReadRegister(4);
-            DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);
-            
+            DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);       
 
-            processesTable->Remove(currentThread->space->GetSid());
-            delete currentThread->space;
-            currentThread->Finish();
+            while(!currentThread->childList->IsEmpty()) {
+              DEBUG('e', "Removing childs from thread %s\n", currentThread->GetName());
+              (currentThread->childList->Pop())->Join();
+            }
+            currentThread->Finish(status);
             break;
         }
         default:

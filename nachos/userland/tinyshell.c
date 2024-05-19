@@ -23,9 +23,7 @@ main(void)
 
         if (i > 0) {
             newProc = Exec(buffer);
-            if(!Join(newProc)) {
-                putstr("Error en Join");
-            } 
+            int e = Join(newProc);
         }
     }
 

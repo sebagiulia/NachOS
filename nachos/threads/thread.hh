@@ -107,7 +107,7 @@ public:
     /// Basic thread operations.
 
     //The thread that calls this function will wait until this thread finishes.
-    void Join();
+    void Join(int *exitstatus = nullptr);
 
     /// Make thread run `(*func)(arg)`.
     void Fork(VoidFunctionPtr func, void *arg);
@@ -119,7 +119,7 @@ public:
     void Sleep();
 
     /// The thread is done executing.
-    void Finish();
+    void Finish(int exitstatus = -1);
 
     /// Check if thread has overflowed its stack.
     void CheckOverflow() const;
@@ -153,6 +153,8 @@ private:
     int originalPriority;
 
 #ifdef USER_PROGRAM
+
+
     /// User-level CPU register state.
     ///
     /// A thread running a user program actually has *two* sets of CPU
@@ -161,6 +163,9 @@ private:
     int userRegisters[NUM_TOTAL_REGS];
 
 public:
+    /// Save childs of the threads.
+    /// These childs are created whith Exec by the user program.
+    List<Thread *> *childList; 
 
     // Save user-level register state.
     void SaveUserState();

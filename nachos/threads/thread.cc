@@ -51,6 +51,7 @@ Thread::Thread(const char *threadName, bool willJoin, int prior)
 
     priority = originalPriority = prior;
 #ifdef USER_PROGRAM
+    childList = new List<Thread *>();
     space    = nullptr;
     openFilesTable = new Table<OpenFile*>;
     openFilesTable->Add(nullptr);
@@ -81,12 +82,14 @@ Thread::~Thread()
 }
 
 //The thread that calls this function will wait until this thread finishes.
-    void Thread::Join(){
+    void Thread::Join(int *exitstatus){
         DEBUG('t',"Thread \"%s\" calling Join on thread \"%s\" \n",currentThread->GetName(), name);
         ASSERT(currentThread != this);
         ASSERT(channel != nullptr);
         int dummy;
-        channel->Receive(&dummy);
+        if(!exitstatus)
+            exitstatus = &dummy;
+        channel->Receive(exitstatus);
     }
 
 
@@ -196,14 +199,18 @@ Thread::GetOriginalPriority()
 /// NOTE: we disable interrupts, so that we do not get a time slice between
 /// setting `threadToBeDestroyed`, and going to sleep.
 void
-Thread::Finish()
+Thread::Finish(int exitstatus)
 {
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
     if(channel != nullptr){
-        channel->Send(0);
+        channel->Send(exitstatus);
+        #ifdef USER_PROGRAM
+            processesTable->Remove(currentThread->space->GetSid());
+            delete currentThread->space;
+        #endif
     }
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.

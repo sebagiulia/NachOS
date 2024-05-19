@@ -15,10 +15,6 @@
 int
 main(void)
 {
-    char *buffer = "HOLAsaa";
-    int k = atoi("901");
-    //itoa(k, buffer);
-    //putstr(buffer);
     putstr("Hola Mundo!");
-    return 0;
+    Exit(15);
 }

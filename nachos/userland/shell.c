@@ -80,6 +80,7 @@ PrepareArguments(char *line, char **argv, unsigned argvSize)
     // TODO: what if the user wants to include a space as part of an
     //       argument?
     for (unsigned i = 0; line[i] != '\0'; i++) {
+
         if (line[i] == ARG_SEPARATOR) {
             if (argCount == argvSize - 1) {
                 // The maximum of allowed arguments is exceeded, and
@@ -104,7 +105,9 @@ main(void)
     const OpenFileId OUTPUT = CONSOLE_OUTPUT;
     char             line[MAX_LINE_SIZE];
     char            *argv[MAX_ARG_COUNT];
+    char *line2;
 
+    int runInBackground = 0;
     for (;;) {
         WritePrompt(OUTPUT);
         const unsigned lineSize = ReadLine(line, MAX_LINE_SIZE, INPUT);
@@ -112,20 +115,27 @@ main(void)
             continue;
         }
 
-        if (PrepareArguments(line, argv, MAX_ARG_COUNT) == 0) {
+        line2 = line;
+        if(line[0] == '&') {
+            line2 = &line[1];
+            runInBackground = 1;
+        }
+        if (PrepareArguments(line2, argv, MAX_ARG_COUNT) == 0) {
             WriteError("too many arguments.", OUTPUT);
             continue;
         }
 
         // Comment and uncomment according to whether command line arguments
         // are given in the system call or not.
-        const SpaceId newProc = Exec(line);
+        const SpaceId newProc = Exec(line2);
         //const SpaceId newProc = Exec(line, argv);
 
         // TODO: check for errors when calling `Exec`; this depends on how
         //       errors are reported.
 
-        Join(newProc);
+        if(!runInBackground)
+            Join(newProc);
+        runInBackground = 0;
         // TODO: is it necessary to check for errors after `Join` too, or
         //       can you be sure that, with the implementation of the system
         //       call handler you made, it will never give an error?; what
