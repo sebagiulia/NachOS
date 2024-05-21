@@ -15,14 +15,14 @@
 int
 main(int argc, char **argv)
 {  
-   // for(int i = 0; i < 1000000; i++);
-    char buffer[10];
-    itoa(argc, buffer);
-    putstr(buffer);
-    if(argc <= 1) putstr("Me ejecutaron sin argumentos");
-    else{
-        putstr(argv[1]);
-    }
-    putstr("Hola Mundo!");
-    Exit(15);
+    char *buffer = "Hola Mundo\n";
+    Create("hola.txt");
+    OpenFileId fid = Open("hola.txt");
+    Write(buffer, strlen(buffer), fid);
+    Write(buffer, strlen(buffer), fid);
+    Write(buffer, strlen(buffer), fid);
+    Write(buffer, strlen(buffer), fid);
+    Write(buffer, strlen(buffer), fid);
+    Close(fid);
+    Exit(0);
 }
