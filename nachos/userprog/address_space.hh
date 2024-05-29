@@ -48,14 +48,13 @@ public:
     void SaveState();
     void RestoreState();
 
-    int GetExitStatus();
-    void SetExitStatus(int status);
+    bool LoadTLB(unsigned page);
 
 private:
 
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
-
+    int nextReplace;
     /// Number of pages in the virtual address space.
     unsigned numPages;
 

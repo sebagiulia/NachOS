@@ -23,6 +23,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     ASSERT(exe.CheckMagic());     // -----Un programa puede romper el so si no es noff(arreglar) -Checkear en exec
 
+    nextReplace = 0;
+
     // How big is address space?
 
     unsigned size = exe.GetSize() + USER_STACK_SIZE;
@@ -157,7 +159,23 @@ AddressSpace::SaveState()
 void
 AddressSpace::RestoreState()
 {
-    machine->GetMMU()->pageTable     = pageTable;
-    machine->GetMMU()->pageTableSize = numPages;
+    if((machine->GetMMU()->tlb) != nullptr){
+      for (unsigned i = 0; i < TLB_SIZE; i++) {
+            machine->GetMMU()->tlb[i].valid = false;
+      }
+    nextReplace = 0;
+    }
+    else{
+      machine->GetMMU()->pageTable     = pageTable;
+      machine->GetMMU()->pageTableSize = numPages;
+    }
 }
 
+bool AddressSpace::LoadTLB(unsigned page){
+  ASSERT(machine->GetMMU()->tlb != nullptr);
+  if(page < 0 || page > numPages) return false;
+  machine->GetMMU()->tlb[nextReplace % TLB_SIZE] = pageTable[page];
+  nextReplace++;
+  nextReplace%=TLB_SIZE;
+  return true;
+}

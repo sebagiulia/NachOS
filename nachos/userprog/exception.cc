@@ -20,7 +20,6 @@
 ///               2016-2021 Docentes de la Universidad Nacional de Rosario.
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
-
 #include "args.hh"
 #include "transfer.hh"
 #include "syscall.h"
@@ -60,6 +59,16 @@ DefaultHandler(ExceptionType et)
             ExceptionTypeToString(et), exceptionArg);
     ASSERT(false);
 }
+
+static void PageFaultHandler(ExceptionType et){
+  int virtualAddr = machine->ReadRegister(BAD_VADDR_REG);
+  DEBUG('e', "Page Fault Exception at addr %d\n", virtualAddr);
+  int pageNumber = virtualAddr / PAGE_SIZE;
+  ASSERT(currentThread->space->LoadTLB((unsigned)pageNumber));
+}
+
+
+
 
 static void InitNewThread(void *args)
 {
@@ -514,7 +523,7 @@ SetExceptionHandlers()
 {
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
     machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);

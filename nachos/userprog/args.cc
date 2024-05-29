@@ -26,7 +26,9 @@ bool CountArgsToSave(int address, unsigned *count)
     int val;
     unsigned c = 0;
     do {
-        machine->ReadMem(address + 4 * c, 4, &val);
+        int prueba = 0;
+        while(machine->ReadMem(address + 4 * c, 4, &val) == 0 && prueba < 4) prueba++;
+        ASSERT(prueba < 4);
         c++;
     } while (c < MAX_ARG_COUNT && val != 0);
     if (c == MAX_ARG_COUNT && val != 0) {
@@ -60,7 +62,9 @@ SaveArgs(int address)
         args[i] = new char [MAX_ARG_LENGTH];
         int strAddr;
         // For each pointer, read the corresponding string.
-        machine->ReadMem(address + i * 4, 4, &strAddr);
+        int prueba = 0;
+        while(machine->ReadMem(address + i * 4, 4, &strAddr) == 0 && prueba < 4) prueba++;
+        ASSERT(prueba < 4);
         ReadStringFromUser(strAddr, args[i], MAX_ARG_LENGTH);
     }
     args[count] = nullptr;  // Write the trailing null.
@@ -97,10 +101,13 @@ WriteArgs(char **args)
     sp -= c * 4 + 4;  // Make room for `argv`, including the trailing null.
     // Write each argument's address.
     for (unsigned i = 0; i < c; i++) {
-        machine->WriteMem(sp + 4 * i, 4, argsAddress[i]);
+        int prueba = 0;
+        while(machine->WriteMem(sp + 4 * i, 4, argsAddress[i]) == 0 && prueba < 4) prueba++;
+        ASSERT(prueba < 4);
     }
-    machine->WriteMem(sp + 4 * c, 4, 0);  // The last is null.
-
+    int prueba = 0;
+    while(machine->WriteMem(sp + 4 * c, 4, 0) == 0 && prueba < 4) prueba++;  // The last is null.
+    ASSERT(prueba < 4);
     machine->WriteRegister(STACK_REG, sp);
     return c;
 }
