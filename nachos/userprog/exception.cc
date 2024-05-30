@@ -68,8 +68,14 @@ static void PageFaultHandler(ExceptionType et){
 }
 
 static void ReadOnlyHandler(ExceptionType et){
-  DEBUG('e', "Read only address\n");
-  interrupt->Halt();
+  DEBUG('e', "Read only exception\n");
+
+  while(!currentThread->childList->IsEmpty()) {
+    DEBUG('e', "Joining childs from thread %s\n", currentThread->GetName());
+    (currentThread->childList->Pop())->Join();
+  }
+
+  currentThread->Finish(status);
 }
 
 
@@ -505,7 +511,6 @@ SyscallHandler(ExceptionType _et)
               (currentThread->childList->Pop())->Join();
             }
 
-            //DEBUG('h', "countTlbAccess: %i, hits: %i, current hitRatio: %f\n", machine->GetMMU()->countTlbAccess, machine->GetMMU()->hits, ((float)machine->GetMMU()->hits*100)/(float)machine->GetMMU()->countTlbAccess);
             currentThread->Finish(status);
             break;
         }
@@ -535,5 +540,3 @@ SetExceptionHandlers()
     machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
     machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
 }
-
-
