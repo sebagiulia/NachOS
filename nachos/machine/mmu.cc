@@ -46,11 +46,13 @@ MMU::MMU(unsigned aNumPhysPages)
         tlb[i].valid = false;
     }
     pageTable = nullptr;
+    hits = 0;
+    countTlbAccess = 0;
 #else  // Use linear page table.
     tlb = nullptr;
     pageTable = nullptr;
 #endif
-   
+
 }
 
 MMU::~MMU()
@@ -169,7 +171,7 @@ MMU::WriteMem(unsigned addr, unsigned size, int value)
 }
 
 ExceptionType
-MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
+MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry)
 {
     ASSERT(entry != nullptr);
 
@@ -199,10 +201,12 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
             TranslationEntry *e = &tlb[i];
             if (e->valid && e->virtualPage == vpn) {
                 *entry = e;  // FOUND!
+                hits++;
+                countTlbAccess++;
                 return NO_EXCEPTION;
             }
         }
-
+        hits--;
         // Not found.
         DEBUG_CONT('a', "no valid TLB entry found for this virtual page!\n");
         return PAGE_FAULT_EXCEPTION;  // Really, this is a TLB fault, the

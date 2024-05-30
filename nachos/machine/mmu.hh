@@ -75,6 +75,8 @@ public:
 
     TranslationEntry *tlb;  ///< This pointer should be considered
                             ///< “read-only” to Nachos kernel code.
+    int hits;
+    int countTlbAccess;
 
     TranslationEntry *pageTable;
     unsigned pageTableSize;
@@ -83,7 +85,7 @@ private:
 
     /// Retrieve a page entry either from a page table or the TLB.
     ExceptionType RetrievePageEntry(unsigned vpn,
-                                    TranslationEntry **entry) const;
+                                    TranslationEntry **entry);
 
     /// Translate an address, and check for alignment.
     ///

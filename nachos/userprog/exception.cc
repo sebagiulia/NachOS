@@ -67,7 +67,10 @@ static void PageFaultHandler(ExceptionType et){
   ASSERT(currentThread->space->LoadTLB((unsigned)pageNumber));
 }
 
-
+static void ReadOnlyHandler(ExceptionType et){
+  DEBUG('e', "Read only address\n");
+  interrupt->Halt();
+}
 
 
 static void InitNewThread(void *args)
@@ -91,10 +94,10 @@ static void InitNewThread(void *args)
 unsigned StartNewProcess(OpenFile *exec, char **args)
 {
   Thread *newThread = new Thread("child", true);
-  unsigned sid = processesTable->Add(newThread); 
+  unsigned sid = processesTable->Add(newThread);
   newThread->sid = sid;
   currentThread->childList->Append(newThread);
-	AddressSpace *space = new AddressSpace(exec);	
+	AddressSpace *space = new AddressSpace(exec);
   newThread->space = space;
   newThread->Fork(InitNewThread, args);
   return sid;
@@ -235,13 +238,13 @@ SyscallHandler(ExceptionType _et)
           if (fid == CONSOLE_OUTPUT) {
             for(int i = 0; i < size; i++){
               synchConsole->PutChar(buffer[i]);
-            }  
+            }
             DEBUG('e', "`Write` done on synch_console `%u`.\n", fid);
-            machine->WriteRegister(2, 0); // Return success code.        
+            machine->WriteRegister(2, 0); // Return success code.
             break;
           }
 
-          
+
           if(!currentThread->openFilesTable->HasKey(fid)) {
             DEBUG('e', "Error: file id `%u` not found.\n", fid);
             machine->WriteRegister(2, -1);  // Return error code.
@@ -295,7 +298,7 @@ SyscallHandler(ExceptionType _et)
             machine->WriteRegister(2, -1);  // Return error code.
             break;
           }
-          
+
           char buffer[size];
 
           if (fid == CONSOLE_INPUT) {
@@ -307,7 +310,7 @@ SyscallHandler(ExceptionType _et)
                 break;
               }
             }
-            
+
             WriteBufferToUser(buffer, bufferAddr, i);
             machine->WriteRegister(2, i);
             break;
@@ -400,7 +403,7 @@ SyscallHandler(ExceptionType _et)
         }
 
 	      case SC_EXEC: {
-	
+
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
@@ -422,7 +425,7 @@ SyscallHandler(ExceptionType _et)
               DEBUG('e', "Unable to execute file %s", filename);
               machine->WriteRegister(2,-1);
               break;
-            } 
+            }
 
             unsigned spaceid = StartNewProcess(executable,nullptr);
             DEBUG('e', "Success: File %s executed.\n", filename);
@@ -495,12 +498,14 @@ SyscallHandler(ExceptionType _et)
 
         case SC_EXIT: {
             int status = machine->ReadRegister(4);
-            DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);       
+            DEBUG('e', "`Exit` requested from thread `%s` with status %d.\n",currentThread->GetName(), status);
 
             while(!currentThread->childList->IsEmpty()) {
               DEBUG('e', "Removing childs from thread %s\n", currentThread->GetName());
               (currentThread->childList->Pop())->Join();
             }
+
+            DEBUG('h', "countTlbAccess: %i, hits: %i, current hitRatio: %f\n", machine->GetMMU()->countTlbAccess, machine->GetMMU()->hits, ((float)machine->GetMMU()->hits*100)/(float)machine->GetMMU()->countTlbAccess);
             currentThread->Finish(status);
             break;
         }
@@ -524,9 +529,31 @@ SetExceptionHandlers()
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
     machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
-    machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
+    machine->SetHandler(READ_ONLY_EXCEPTION,     &ReadOnlyHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
     machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
     machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
 }
+
+/*
+Hemos probado con sort y con matmult.
+Probamos con 4, con 32 y con 64 paginas.
+
+Los resultados que obtuvimos fueron:
+sort con 4 paginas: 94% de hits
+sort con 32 paginas: 99.98% de hits
+sort con 64 paginas: 99.99% de hits
+matmult con 4 paginas: 91% de hits
+matmult con 32 paginas: 99.98% de hits
+matmult con 64 paginas: 99.99% de hits
+
+Ya que la diferencia de hits entre 32 y 64 paginas es muy parecida para estos
+procesos, es preferible usar 32 paginas puesto que la eficiencia practicamente
+no cambiaria y estariamos ahorrando en hardware suponiendo que esta tlb fuera
+implementada en un sistema operativo real.
+Si en cambio se ejecutaran procesos significativamente mas grandes es probable
+que la eficiencia entre 32 y 64 paginas sea considerablemente mayor, por lo
+tanto seria preferible usar 64 paginas. En conclusion, la cantidad de paginas
+que convendria usar depende de el uso que se le va a dar al sistema.
+*/
