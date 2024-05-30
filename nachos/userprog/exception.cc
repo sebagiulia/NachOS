@@ -505,7 +505,7 @@ SyscallHandler(ExceptionType _et)
               (currentThread->childList->Pop())->Join();
             }
 
-            DEBUG('h', "countTlbAccess: %i, hits: %i, current hitRatio: %f\n", machine->GetMMU()->countTlbAccess, machine->GetMMU()->hits, ((float)machine->GetMMU()->hits*100)/(float)machine->GetMMU()->countTlbAccess);
+            //DEBUG('h', "countTlbAccess: %i, hits: %i, current hitRatio: %f\n", machine->GetMMU()->countTlbAccess, machine->GetMMU()->hits, ((float)machine->GetMMU()->hits*100)/(float)machine->GetMMU()->countTlbAccess);
             currentThread->Finish(status);
             break;
         }
@@ -536,24 +536,4 @@ SetExceptionHandlers()
     machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
 }
 
-/*
-Hemos probado con sort y con matmult.
-Probamos con 4, con 32 y con 64 paginas.
 
-Los resultados que obtuvimos fueron:
-sort con 4 paginas: 94% de hits
-sort con 32 paginas: 99.98% de hits
-sort con 64 paginas: 99.99% de hits
-matmult con 4 paginas: 91% de hits
-matmult con 32 paginas: 99.98% de hits
-matmult con 64 paginas: 99.99% de hits
-
-Ya que la diferencia de hits entre 32 y 64 paginas es muy parecida para estos
-procesos, es preferible usar 32 paginas puesto que la eficiencia practicamente
-no cambiaria y estariamos ahorrando en hardware suponiendo que esta tlb fuera
-implementada en un sistema operativo real.
-Si en cambio se ejecutaran procesos significativamente mas grandes es probable
-que la eficiencia entre 32 y 64 paginas sea considerablemente mayor, por lo
-tanto seria preferible usar 64 paginas. En conclusion, la cantidad de paginas
-que convendria usar depende de el uso que se le va a dar al sistema.
-*/

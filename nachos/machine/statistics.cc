@@ -21,6 +21,7 @@ Statistics::Statistics()
     numDiskReads = numDiskWrites = 0;
     numConsoleCharsRead = numConsoleCharsWritten = 0;
     numPageFaults = 0;
+    memoryAccess = 0;
 #ifdef DFS_TICKS_FIX
     tickResets = 0;
 #endif
@@ -44,4 +45,5 @@ Statistics::Print()
     printf("Console I/O: reads %lu, writes %lu\n",
            numConsoleCharsRead, numConsoleCharsWritten);
     printf("Paging: faults %lu\n", numPageFaults);
+    printf("Paging: hits percentage: %lf\n", (double)(memoryAccess-numPageFaults)/memoryAccess * 100);
 }

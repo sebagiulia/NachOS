@@ -31,7 +31,7 @@
 #include "mmu.hh"
 #include "machine.hh"
 #include "endianness.hh"
-
+#include "threads/system.hh"
 #include <stdio.h>
 extern Machine* machine;
 
@@ -46,8 +46,6 @@ MMU::MMU(unsigned aNumPhysPages)
         tlb[i].valid = false;
     }
     pageTable = nullptr;
-    hits = 0;
-    countTlbAccess = 0;
 #else  // Use linear page table.
     tlb = nullptr;
     pageTable = nullptr;
@@ -171,7 +169,7 @@ MMU::WriteMem(unsigned addr, unsigned size, int value)
 }
 
 ExceptionType
-MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry)
+MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
 {
     ASSERT(entry != nullptr);
 
@@ -201,12 +199,11 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry)
             TranslationEntry *e = &tlb[i];
             if (e->valid && e->virtualPage == vpn) {
                 *entry = e;  // FOUND!
-                hits++;
-                countTlbAccess++;
+                stats->memoryAccess++;
                 return NO_EXCEPTION;
             }
         }
-        hits--;
+        stats->numPageFaults++;
         // Not found.
         DEBUG_CONT('a', "no valid TLB entry found for this virtual page!\n");
         return PAGE_FAULT_EXCEPTION;  // Really, this is a TLB fault, the

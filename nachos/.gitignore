@@ -37,3 +37,4 @@
 /documentation/**/*-converted-to.*
 # Ignorar txts en carpeta de código
 /**/*.txt
+!/*.txt
