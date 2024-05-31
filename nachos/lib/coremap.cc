@@ -1,5 +1,4 @@
 #include "coremap.hh"
-#include "threads/system.hh"
 
 Coremap::Coremap(unsigned nitems)
 {
@@ -7,14 +6,14 @@ Coremap::Coremap(unsigned nitems)
 
     numItems       = nitems;
     bitmap         = new Bitmap(nitems);
-    virtualPage    = new unsigned [nitems];
+    virtualPageNum = new unsigned [nitems];
     proccessID     = new unsigned [nitems];
 }
 
 Coremap::~Coremap()
 {
     delete bitmap;
-    delete [] virtualPage;
+    delete [] virtualPageNum;
     delete [] proccessID;
 }
 
@@ -22,18 +21,10 @@ void
 Coremap::Clear(unsigned which)
 {
     bitmap->Clear(which);
-    virtualPage[which] = -1;
-    proccessID[which] = -1;
 }
 
 int
-Coremap::Find(unsigned vPage)
+Coremap::Find()
 {
-    int pp = bitmap->Find();
-    if (pp == -1) return -1;
-    else {
-        virtualPage[pp] = vPage;
-        proccessID[pp] = currentThread->sid;
-        return pp;
-    }
+    return bitmap->Find();
 }

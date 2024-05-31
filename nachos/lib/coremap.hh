@@ -15,11 +15,10 @@ public:
     /// Clear the “nth” bit of the bitmap.
     void Clear(unsigned which);
 
-    /// Return the index of a clear bit in the bitmap, and as a side effect,
-    /// set the bit, the current process ID, and the corresponding virtual page.
+    /// Return the index of a clear bit in the bitmap, and as a side effect, set the bit.
     ///
     /// If no bits are clear, return -1.
-    int Find(unsigned vPage);
+    int Find();
 
 private:
 
@@ -27,7 +26,7 @@ private:
 
     Bitmap *bitmap;
 
-    unsigned *virtualPage;
+    unsigned *virtualPageNum;
 
     unsigned *proccessID;
 

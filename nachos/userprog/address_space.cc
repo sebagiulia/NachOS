@@ -44,7 +44,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-        int physicalPage = memoryPages->Find(pageTable[i].virtualPage);
+        int physicalPage = memoryPages->Find();
         DEBUG('a', "asigno a pagina virtual %d pagina fisica %d\n", i, physicalPage);
         if(physicalPage == -1){
           DEBUG('a', "No space on memory to allocate the process.");
