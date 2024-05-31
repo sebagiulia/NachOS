@@ -62,9 +62,9 @@ DefaultHandler(ExceptionType et)
 
 static void PageFaultHandler(ExceptionType et){
   int virtualAddr = machine->ReadRegister(BAD_VADDR_REG);
-  DEBUG('e', "Page Fault Exception at addr %d\n", virtualAddr);
-  int pageNumber = virtualAddr / PAGE_SIZE;
-  ASSERT(currentThread->space->LoadTLB((unsigned)pageNumber));
+  //DEBUG('e', "Page Fault Exception at addr %d\n", virtualAddr);
+  int page = virtualAddr / PAGE_SIZE;
+  ASSERT(currentThread->space->LoadTLB(unsigned(page)));
 }
 
 static void ReadOnlyHandler(ExceptionType et){

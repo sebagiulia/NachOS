@@ -22,6 +22,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     Executable exe (executable_file);
 
     ASSERT(exe.CheckMagic());     // -----Un programa puede romper el so si no es noff(arreglar) -Checkear en exec
+    
+    exe_file = executable_file;
 
     nextReplace = 0;
 
@@ -42,24 +44,23 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     // First, set up the translation.
 
     pageTable = new TranslationEntry[numPages];
+    #ifndef DEMAND_LOADING
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
         int physicalPage = memoryPages->Find(pageTable[i].virtualPage);
-        DEBUG('a', "asigno a pagina virtual %d pagina fisica %d\n", i, physicalPage);
+        //DEBUG('a', "asigno a pagina virtual %d pagina fisica %d\n", i, physicalPage);
         if(physicalPage == -1){
           DEBUG('a', "No space on memory to allocate the process.");
           ASSERT(false);
         }
-        pageTable[i].physicalPage = physicalPage;
+        pageTable[i].physicalPage = physicalPage;  
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
-          // If the code segment was entirely on a separate page, we could
-          // set its pages to be read-only.
         char *mainMemory = machine->mainMemory;
         unsigned offset = physicalPage * PAGE_SIZE;
-        memset(mainMemory + offset, 0, PAGE_SIZE);
+        memset(mainMemory + offset, 0, PAGE_SIZE);                    
 
     }
 
@@ -72,36 +73,46 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         uint32_t virtualAddr = exe.GetCodeAddr();
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
                 virtualAddr, codeSize);
-        uint32_t leido = 0;
+        uint32_t leido = 0;    
         while(codeSize - leido> 0){
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
             uint32_t physicalAddr = (pageTable[PageNumber].physicalPage * PAGE_SIZE)+offset;
-            uint32_t sizeToRead = std::min(codeSize-leido, PAGE_SIZE);
+            uint32_t sizeToRead = std::min(codeSize-leido, PAGE_SIZE-offset);
             exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, leido);
             leido+=sizeToRead;
             virtualAddr+=sizeToRead;
             if(sizeToRead == PAGE_SIZE){
               pageTable[PageNumber].readOnly = true;
-            }
+            } 
         }
     }
     if (initDataSize > 0) {
         uint32_t virtualAddr = exe.GetInitDataAddr();
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               virtualAddr, initDataSize);
-        uint32_t leido = 0;
+        uint32_t leido = 0;      
         while(initDataSize - leido > 0){
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
             uint32_t physicalAddr = (pageTable[PageNumber].physicalPage * PAGE_SIZE)+offset;
-            uint32_t sizeToRead = std::min(initDataSize-leido, PAGE_SIZE);
-            exe.ReadDataBlock(&mainMemory[physicalAddr], initDataSize, leido);
+            uint32_t sizeToRead = std::min(initDataSize-leido, PAGE_SIZE-offset);
+            exe.ReadDataBlock(&mainMemory[physicalAddr], sizeToRead, leido);
             leido+=sizeToRead;
             virtualAddr+=sizeToRead;
-            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead);
-        }
+            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead); 
+        } 
     }
+  #else
+    for (unsigned i = 0; i < numPages; i++) {
+        pageTable[i].virtualPage  = i;
+        pageTable[i].physicalPage = -1;  
+        pageTable[i].valid        = false;
+        pageTable[i].use          = false;
+        pageTable[i].dirty        = false;
+        pageTable[i].readOnly     = false;                
+    }
+  #endif
 
 }
 
@@ -111,9 +122,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 AddressSpace::~AddressSpace()
 {
     for(unsigned i = 0; i < numPages; i++){
-      memoryPages->Clear(pageTable[i].physicalPage);
+      if(pageTable[i].valid)
+        memoryPages->Clear(pageTable[i].physicalPage);
     }
     delete [] pageTable;
+    delete exe_file;
 }
 
 /// Set the initial values for the user-level register set.
@@ -174,6 +187,41 @@ AddressSpace::RestoreState()
 bool AddressSpace::LoadTLB(unsigned page){
   ASSERT(machine->GetMMU()->tlb != nullptr);
   if(page < 0 || page > numPages) return false;
+  if(!pageTable[page].valid){
+    DEBUG('e', "Page %d to be loaded in page table\n", page);
+    //buscar pagina fisica disponible
+    int physicalPage = memoryPages->Find(pageTable[page].virtualPage);
+    if(physicalPage == -1){
+      DEBUG('a', "No space on memory to allocate the process.");
+      ASSERT(false);
+    }
+    pageTable[page].physicalPage = physicalPage;  
+    pageTable[page].valid        = true;
+    char *mainMemory = machine->mainMemory;
+    memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
+    //cargar la pagina
+    Executable exe (exe_file);
+    uint32_t codeSize = exe.GetCodeSize();
+    uint32_t initDataSize = exe.GetInitDataSize();
+    uint32_t physicalAddr = (physicalPage * PAGE_SIZE);
+    if(page * PAGE_SIZE < codeSize){ //cargar segmento de codigo
+        uint32_t sizeToRead = std::min(codeSize-(page*PAGE_SIZE), PAGE_SIZE);
+        exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE);
+        if(sizeToRead == PAGE_SIZE){
+          pageTable[page].readOnly = true;
+        }
+        else if(initDataSize > 0){ //tengo que seguir llenando con initdata
+          uint32_t newSizeToRead = PAGE_SIZE - sizeToRead;
+          newSizeToRead = std::min(newSizeToRead, codeSize+initDataSize-(page*PAGE_SIZE));
+          exe.ReadDataBlock(&mainMemory[physicalAddr+sizeToRead], newSizeToRead, 0);
+        }
+    }
+    else if(page * PAGE_SIZE < initDataSize+codeSize){ //cargar initdata
+      uint32_t sizeToRead = std::min(codeSize+initDataSize-(page*PAGE_SIZE), PAGE_SIZE);
+      exe.ReadDataBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE - codeSize);
+    }
+    //sino ya esta lleno de ceros
+  }
   machine->GetMMU()->tlb[nextReplace % TLB_SIZE] = pageTable[page];
   nextReplace++;
   nextReplace%=TLB_SIZE;

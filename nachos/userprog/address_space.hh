@@ -50,6 +50,8 @@ public:
 
     bool LoadTLB(unsigned page);
 
+    OpenFile *exe_file;
+
 private:
 
     /// Assume linear page table translation for now!

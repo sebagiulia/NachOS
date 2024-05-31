@@ -36,7 +36,7 @@ StartProcess(const char *filename)
     currentThread->sid = sid;
     currentThread->space = space;
 
-    delete executable;
+    //delete executable;
 
     space->InitRegisters();  // Set the initial register values.
     space->RestoreState();   // Load page table register.
