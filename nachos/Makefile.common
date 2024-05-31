@@ -92,6 +92,7 @@ USERPROG_HDR = userprog/address_space.hh            \
                filesys/file_system.hh               \
                filesys/open_file.hh                 \
                lib/bitmap.hh                        \
+               lib/coremap.hh                       \
                machine/console.hh                   \
                machine/encoding.hh                  \
                machine/endianness.hh                \
@@ -99,8 +100,8 @@ USERPROG_HDR = userprog/address_space.hh            \
                machine/instruction.hh               \
                machine/machine.hh                   \
                machine/mmu.hh                       \
-               machine/translation_entry.hh         
-               
+               machine/translation_entry.hh
+
 USERPROG_SRC = userprog/address_space.cc            \
                userprog/args.cc                     \
                userprog/debugger.cc                 \
@@ -111,6 +112,7 @@ USERPROG_SRC = userprog/address_space.cc            \
                userprog/transfer.cc                 \
                userprog/synch_console.cc            \
                lib/bitmap.cc                        \
+               lib/coremap.cc                       \
                machine/console.cc                   \
                machine/encoding.cc                  \
                machine/endianness.cc                \
@@ -118,7 +120,7 @@ USERPROG_SRC = userprog/address_space.cc            \
                machine/instruction.cc               \
                machine/machine.cc                   \
                machine/mips_sim.cc                  \
-               machine/mmu.cc                       
+               machine/mmu.cc
 
 VMEM_HDR =
 VMEM_SRC =

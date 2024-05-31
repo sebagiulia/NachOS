@@ -75,7 +75,7 @@ static void ReadOnlyHandler(ExceptionType et){
     (currentThread->childList->Pop())->Join();
   }
 
-  currentThread->Finish(status);
+  currentThread->Finish(-1);
 }
 
 

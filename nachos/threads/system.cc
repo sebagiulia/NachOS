@@ -11,7 +11,7 @@
 #ifdef USER_PROGRAM
 #include "userprog/debugger.hh"
 #include "userprog/exception.hh"
-#include "lib/bitmap.hh"
+#include "lib/coremap.hh"
 #endif
 
 #include <stdlib.h>
@@ -42,7 +42,7 @@ SynchDisk *synchDisk;
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 SynchConsole *synchConsole;
 Machine *machine;  ///< User program memory and registers.
-Bitmap *memoryPages;
+Coremap *memoryPages;
 Table<Thread *> *processesTable;
 
 #endif
@@ -199,7 +199,7 @@ Initialize(int argc, char **argv)
     Debugger *d = debugUserProg ? new Debugger : nullptr;
     machine = new Machine(d, numPhysicalPages);  // This must come first.
     synchConsole = new SynchConsole();
-    memoryPages = new Bitmap(numPhysicalPages);
+    memoryPages = new Coremap(numPhysicalPages);
     SetExceptionHandlers();
     processesTable = new Table<Thread *>();
 #endif
@@ -241,7 +241,7 @@ Cleanup()
     //The thread destructor checks that currentThread != this
     Thread *t = currentThread;
     currentThread = NULL;
-    delete t; 
+    delete t;
 
     exit(0);
 }

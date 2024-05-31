@@ -9,10 +9,10 @@
 #include "address_space.hh"
 #include "executable.hh"
 #include "threads/system.hh"
-#include "lib/bitmap.hh"
+#include "lib/coremap.hh"
 #include <string.h>
 #include <algorithm>
-extern Bitmap *memoryPages;
+extern Coremap *memoryPages;
 
 /// First, set up the translation from program memory to physical memory.
 AddressSpace::AddressSpace(OpenFile *executable_file)
@@ -50,7 +50,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
           DEBUG('a', "No space on memory to allocate the process.");
           ASSERT(false);
         }
-        pageTable[i].physicalPage = physicalPage;  
+        pageTable[i].physicalPage = physicalPage;
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -59,7 +59,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
           // set its pages to be read-only.
         char *mainMemory = machine->mainMemory;
         unsigned offset = physicalPage * PAGE_SIZE;
-        memset(mainMemory + offset, 0, PAGE_SIZE);                    
+        memset(mainMemory + offset, 0, PAGE_SIZE);
 
     }
 
@@ -72,7 +72,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         uint32_t virtualAddr = exe.GetCodeAddr();
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
                 virtualAddr, codeSize);
-        uint32_t leido = 0;    
+        uint32_t leido = 0;
         while(codeSize - leido> 0){
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
@@ -83,14 +83,14 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             virtualAddr+=sizeToRead;
             if(sizeToRead == PAGE_SIZE){
               pageTable[PageNumber].readOnly = true;
-            } 
+            }
         }
     }
     if (initDataSize > 0) {
         uint32_t virtualAddr = exe.GetInitDataAddr();
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               virtualAddr, initDataSize);
-        uint32_t leido = 0;      
+        uint32_t leido = 0;
         while(initDataSize - leido > 0){
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
@@ -99,8 +99,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             exe.ReadDataBlock(&mainMemory[physicalAddr], initDataSize, leido);
             leido+=sizeToRead;
             virtualAddr+=sizeToRead;
-            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead); 
-        } 
+            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead);
+        }
     }
 
 }
