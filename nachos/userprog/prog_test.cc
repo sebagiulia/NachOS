@@ -32,9 +32,12 @@ StartProcess(const char *filename)
     }
 
     AddressSpace *space = new AddressSpace(executable);
-    unsigned sid = processesTable->Add(currentThread); 
+    unsigned sid = processesTable->Add(currentThread);
     currentThread->sid = sid;
     currentThread->space = space;
+
+    sprintf(currentThread->swapFileName, "SWAP.%u", sid);
+    fileSystem->Create(currentThread->swapFileName, space->NumPages()*PAGE_SIZE);
 
     //delete executable;
 

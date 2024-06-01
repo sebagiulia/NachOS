@@ -165,7 +165,7 @@ private:
 public:
     /// Save childs of the threads.
     /// These childs are created whith Exec by the user program.
-    List<Thread *> *childList; 
+    List<Thread *> *childList;
 
     // Save user-level register state.
     void SaveUserState();
@@ -181,6 +181,9 @@ public:
 
     // Space identifier.
     unsigned sid;
+
+    // File for saving pages on swap.
+    char *swapFileName;
 
 #endif
 };

@@ -48,6 +48,9 @@ public:
     void SaveState();
     void RestoreState();
 
+    /// Return the number of pages of the address space
+    unsigned NumPages();
+
     bool LoadTLB(unsigned page);
 
     OpenFile *exe_file;

@@ -22,7 +22,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     Executable exe (executable_file);
 
     ASSERT(exe.CheckMagic());     // -----Un programa puede romper el so si no es noff(arreglar) -Checkear en exec
-    
+
     exe_file = executable_file;
 
     nextReplace = 0;
@@ -53,14 +53,14 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
           DEBUG('a', "No space on memory to allocate the process.");
           ASSERT(false);
         }
-        pageTable[i].physicalPage = physicalPage;  
+        pageTable[i].physicalPage = physicalPage;
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
         char *mainMemory = machine->mainMemory;
         unsigned offset = physicalPage * PAGE_SIZE;
-        memset(mainMemory + offset, 0, PAGE_SIZE);                    
+        memset(mainMemory + offset, 0, PAGE_SIZE);
 
     }
 
@@ -73,7 +73,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         uint32_t virtualAddr = exe.GetCodeAddr();
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
                 virtualAddr, codeSize);
-        uint32_t leido = 0;    
+        uint32_t leido = 0;
         while(codeSize - leido> 0){
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
@@ -84,14 +84,14 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             virtualAddr+=sizeToRead;
             if(sizeToRead == PAGE_SIZE){
               pageTable[PageNumber].readOnly = true;
-            } 
+            }
         }
     }
     if (initDataSize > 0) {
         uint32_t virtualAddr = exe.GetInitDataAddr();
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               virtualAddr, initDataSize);
-        uint32_t leido = 0;      
+        uint32_t leido = 0;
         while(initDataSize - leido > 0){
             uint32_t PageNumber = virtualAddr / PAGE_SIZE;
             uint32_t offset =  virtualAddr % PAGE_SIZE;
@@ -100,17 +100,17 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             exe.ReadDataBlock(&mainMemory[physicalAddr], sizeToRead, leido);
             leido+=sizeToRead;
             virtualAddr+=sizeToRead;
-            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead); 
-        } 
+            //DEBUG('a', "Leyendo %d bytes de datablock\n", sizeToRead);
+        }
     }
   #else
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-        pageTable[i].physicalPage = -1;  
+        pageTable[i].physicalPage = -1;
         pageTable[i].valid        = false;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
-        pageTable[i].readOnly     = false;                
+        pageTable[i].readOnly     = false;
     }
   #endif
 
@@ -195,7 +195,7 @@ bool AddressSpace::LoadTLB(unsigned page){
       DEBUG('a', "No space on memory to allocate the process.");
       ASSERT(false);
     }
-    pageTable[page].physicalPage = physicalPage;  
+    pageTable[page].physicalPage = physicalPage;
     pageTable[page].valid        = true;
     char *mainMemory = machine->mainMemory;
     memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
@@ -226,4 +226,9 @@ bool AddressSpace::LoadTLB(unsigned page){
   nextReplace++;
   nextReplace%=TLB_SIZE;
   return true;
+}
+
+unsigned
+AddressSpace::NumPages(){
+  return numPages;
 }
