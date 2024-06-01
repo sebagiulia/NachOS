@@ -38,6 +38,7 @@ StartProcess(const char *filename)
 
     sprintf(currentThread->swapFileName, "SWAP.%u", sid);
     fileSystem->Create(currentThread->swapFileName, space->NumPages()*PAGE_SIZE);
+    currentThread->swapFileId = fileSystem->Open(currentThread->swapFileName);
 
     //delete executable;
 

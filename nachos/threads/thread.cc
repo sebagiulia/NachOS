@@ -211,6 +211,7 @@ Thread::Finish(int exitstatus)
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
         #ifdef USER_PROGRAM
             delete currentThread->space;
+            delete swapFileId;
             fileSystem->Remove(swapFileName);
             //Tambien hay que cerrar cada archivo de openFilesTable?
         #endif

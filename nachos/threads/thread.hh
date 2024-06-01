@@ -182,8 +182,11 @@ public:
     // Space identifier.
     unsigned sid;
 
-    // File for saving pages on swap.
+    // File name for saving pages on swap.
     char *swapFileName;
+
+    // File id for saving pages on swap.
+    OpenFile *swapFileId;
 
 #endif
 };
