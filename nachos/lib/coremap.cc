@@ -19,6 +19,14 @@ Coremap::~Coremap()
 }
 
 void
+Coremap::Mark(unsigned which, unsigned vPage)
+{
+    bitmap->Mark(which);
+    virtualPage[which] = vPage;
+    proccessID[which] = currentThread->sid;
+}
+
+void
 Coremap::Clear(unsigned which)
 {
     bitmap->Clear(which);
@@ -36,4 +44,24 @@ Coremap::Find(unsigned vPage)
         proccessID[pp] = currentThread->sid;
         return pp;
     }
+}
+
+unsigned
+Coremap::VirtualPage(unsigned which)
+{
+    ASSERT(bitmap->Test(which));
+    return virtualPage[which];
+}
+
+unsigned
+Coremap::ProccessID(unsigned which)
+{
+    ASSERT(bitmap->Test(which));
+    return proccessID[which];
+}
+
+unsigned
+Coremap::NumItems()
+{
+    return numItems;
 }

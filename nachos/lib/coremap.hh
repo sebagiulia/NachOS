@@ -12,6 +12,9 @@ public:
     /// Uninitialize a coremap.
     ~Coremap();
 
+    /// Set the “nth” bit of the bitmap and the coresponding virtual page.
+    void Mark(unsigned which, unsigned vPage);
+
     /// Clear the “nth” bit of the bitmap.
     void Clear(unsigned which);
 
@@ -20,6 +23,15 @@ public:
     ///
     /// If no bits are clear, return -1.
     int Find(unsigned vPage);
+
+    /// Return virtual page number
+    unsigned VirtualPage(unsigned which);
+
+    /// Return proccess id
+    unsigned ProccessID(unsigned which);
+
+    /// Return numItems
+    unsigned NumItems();
 
 private:
 

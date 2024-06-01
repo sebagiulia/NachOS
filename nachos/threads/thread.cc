@@ -56,7 +56,6 @@ Thread::Thread(const char *threadName, bool willJoin, int prior)
     openFilesTable = new Table<OpenFile*>;
     openFilesTable->Add(nullptr);
     openFilesTable->Add(nullptr);
-    swapFileName = new char[7];
 #endif
 }
 
@@ -82,7 +81,6 @@ Thread::~Thread()
     #ifdef USER_PROGRAM
     delete openFilesTable;
     delete childList;
-    delete swapFileName;
     #endif
 }
 
@@ -211,9 +209,7 @@ Thread::Finish(int exitstatus)
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
         #ifdef USER_PROGRAM
             delete currentThread->space;
-            delete swapFileId;
-            fileSystem->Remove(swapFileName);
-            //Tambien hay que cerrar cada archivo de openFilesTable?
+            //Hay que cerrar cada archivo de openFilesTable?
         #endif
     if(channel != nullptr){
         channel->Send(exitstatus);

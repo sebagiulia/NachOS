@@ -12,6 +12,8 @@
 #include "lib/coremap.hh"
 #include <string.h>
 #include <algorithm>
+#include <time.h>
+#include <cstdio>
 extern Coremap *memoryPages;
 
 /// First, set up the translation from program memory to physical memory.
@@ -184,51 +186,97 @@ AddressSpace::RestoreState()
     }
 }
 
-bool AddressSpace::LoadTLB(unsigned page){
-  ASSERT(machine->GetMMU()->tlb != nullptr);
-  if(page < 0 || page > numPages) return false;
-  if(!pageTable[page].valid){
-    DEBUG('e', "Page %d to be loaded in page table\n", page);
-    //buscar pagina fisica disponible
-    int physicalPage = memoryPages->Find(pageTable[page].virtualPage);
-    if(physicalPage == -1){
-      DEBUG('a', "No space on memory to allocate the process.");
-      ASSERT(false);
-    }
-    pageTable[page].physicalPage = physicalPage;
-    pageTable[page].valid        = true;
-    char *mainMemory = machine->mainMemory;
-    memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
-    //cargar la pagina
-    Executable exe (exe_file);
-    uint32_t codeSize = exe.GetCodeSize();
-    uint32_t initDataSize = exe.GetInitDataSize();
-    uint32_t physicalAddr = (physicalPage * PAGE_SIZE);
-    if(page * PAGE_SIZE < codeSize){ //cargar segmento de codigo
-        uint32_t sizeToRead = std::min(codeSize-(page*PAGE_SIZE), PAGE_SIZE);
-        exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE);
-        if(sizeToRead == PAGE_SIZE){
-          pageTable[page].readOnly = true;
+void
+AddressSpace::MemToSwap(int pPage, char *fileName, unsigned vPage)
+{
+
+}
+
+void
+AddressSpace::SwapToMem(char *fileName, unsigned vPage, int pPage)
+{
+
+}
+
+bool
+AddressSpace::LoadTLB(unsigned page)
+{
+    ASSERT(machine->GetMMU()->tlb != nullptr);
+    if(page < 0 || page > numPages) return false;
+    if(!pageTable[page].valid){
+      DEBUG('e', "Page %d to be loaded in page table\n", page);
+      //buscar pagina fisica
+      int physicalPage = memoryPages->Find(pageTable[page].virtualPage);
+      if(physicalPage == -1){
+        DEBUG('a', "Swapping page.");
+
+        physicalPage = PickVictim();
+        unsigned victimProccessId = memoryPages->ProccessID(physicalPage);
+        unsigned victimVirtualPage = memoryPages->VirtualPage(physicalPage);
+        // ¿aca faltaria poner en falso el bit valid de la entrada victimVirtualPage de la pageTable de victimProccessId?
+        // capaz eso lo deberia cambiar el proceso victimProccessId cuando retoma el procesador chequeando el coremap
+        memoryPages->Mark(physicalPage, pageTable[page].virtualPage);
+
+        char *victimSwap = new char[7];
+        sprintf(victimSwap, "SWAP.%u", victimProccessId);
+        MemToSwap(physicalPage, victimSwap, victimVirtualPage);
+        delete victimSwap;
+
+        ASSERT(false); //esto no iria mas
+      }
+      pageTable[page].physicalPage = physicalPage;
+      pageTable[page].valid        = true;
+      char *mainMemory = machine->mainMemory;
+      memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
+      if(0){
+        //cargar pagina de swap
+        DEBUG('a', "Swapping page.");
+
+        char * swap = new char[7];
+        sprintf(swap, "SWAP.%u", currentThread->sid);
+        SwapToMem(swap, pageTable[page].virtualPage, physicalPage);
+        delete swap;
+      }else{
+        //cargar la pagina del ejecutable
+        Executable exe (exe_file);
+        uint32_t codeSize = exe.GetCodeSize();
+        uint32_t initDataSize = exe.GetInitDataSize();
+        uint32_t physicalAddr = (physicalPage * PAGE_SIZE);
+        if(page * PAGE_SIZE < codeSize){ //cargar segmento de codigo
+            uint32_t sizeToRead = std::min(codeSize-(page*PAGE_SIZE), PAGE_SIZE);
+            exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE);
+            if(sizeToRead == PAGE_SIZE){
+              pageTable[page].readOnly = true;
+            }
+            else if(initDataSize > 0){ //tengo que seguir llenando con initdata
+              uint32_t newSizeToRead = PAGE_SIZE - sizeToRead;
+              newSizeToRead = std::min(newSizeToRead, codeSize+initDataSize-(page*PAGE_SIZE));
+              exe.ReadDataBlock(&mainMemory[physicalAddr+sizeToRead], newSizeToRead, 0);
+            }
         }
-        else if(initDataSize > 0){ //tengo que seguir llenando con initdata
-          uint32_t newSizeToRead = PAGE_SIZE - sizeToRead;
-          newSizeToRead = std::min(newSizeToRead, codeSize+initDataSize-(page*PAGE_SIZE));
-          exe.ReadDataBlock(&mainMemory[physicalAddr+sizeToRead], newSizeToRead, 0);
+        else if(page * PAGE_SIZE < initDataSize+codeSize){ //cargar initdata
+          uint32_t sizeToRead = std::min(codeSize+initDataSize-(page*PAGE_SIZE), PAGE_SIZE);
+          exe.ReadDataBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE - codeSize);
         }
+        //sino ya esta lleno de ceros
+      }
     }
-    else if(page * PAGE_SIZE < initDataSize+codeSize){ //cargar initdata
-      uint32_t sizeToRead = std::min(codeSize+initDataSize-(page*PAGE_SIZE), PAGE_SIZE);
-      exe.ReadDataBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE - codeSize);
-    }
-    //sino ya esta lleno de ceros
-  }
-  machine->GetMMU()->tlb[nextReplace % TLB_SIZE] = pageTable[page];
-  nextReplace++;
-  nextReplace%=TLB_SIZE;
-  return true;
+    machine->GetMMU()->tlb[nextReplace % TLB_SIZE] = pageTable[page];
+    nextReplace++;
+    nextReplace%=TLB_SIZE;
+    return true;
 }
 
 unsigned
-AddressSpace::NumPages(){
-  return numPages;
+AddressSpace::NumPages()
+{
+    return numPages;
+}
+
+int
+AddressSpace::PickVictim()
+{
+    srand(time(NULL));
+    int i = rand() % memoryPages->NumItems();
+    return i;
 }
