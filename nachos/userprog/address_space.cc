@@ -193,22 +193,6 @@ AddressSpace::RestoreState()
     }
 }
 
-void
-AddressSpace::MemToSwap(int pPage, char *fileName, unsigned vPage)
-{
-    OpenFile* openFile = fileSystem->Open(fileName);
-    openFile->WriteAt(machine->mainMemory + pPage*PAGE_SIZE, PAGE_SIZE, vPage);
-    delete openFile;
-}
-
-void
-AddressSpace::SwapToMem(char *fileName, unsigned vPage, int pPage)
-{
-    OpenFile* openFile = fileSystem->Open(fileName);
-    openFile->ReadAt(machine->mainMemory + pPage*PAGE_SIZE, PAGE_SIZE, vPage);
-    delete openFile;
-}
-
 bool
 AddressSpace::LoadTLB(unsigned page)
 {
@@ -218,10 +202,13 @@ AddressSpace::LoadTLB(unsigned page)
     if(!pageTable[page].valid){
       DEBUG('e', "Page %d to be loaded in page table\n", page);
 
+      bool inSwap = false;
+
       //buscar pagina fisica
       int physicalPage = memoryPages->Find(pageTable[page].virtualPage);
 
       if(physicalPage == -1){
+        #ifndef SWAP
         DEBUG('a', "Swapping page.");
 
         physicalPage = PickVictim();
@@ -234,16 +221,22 @@ AddressSpace::LoadTLB(unsigned page)
 
         char *victimSwap = new char[7];
         sprintf(victimSwap, "SWAP.%u", victimProccessId);
+
         //primero deberiamos chequear que la pagina no este ya en swap
-        MemToSwap(physicalPage, victimSwap, victimVirtualPage);
+        OpenFile* openFile = fileSystem->Open(victimSwap);
+        openFile->WriteAt(machine->mainMemory + physicalPage*PAGE_SIZE, PAGE_SIZE, victimVirtualPage);
+        delete openFile;
+
         delete victimSwap;
 
-        ASSERT(false); //esto no iria mas
-      }
+        if(pageTable[page].physicalPage != (unsigned)-1) inSwap = true;
 
-      bool inSwap;
-      if(pageTable[page].physicalPage == (unsigned)-1) inSwap = false;
-      else inSwap = true;
+        ASSERT(false); //esto no iria mas
+        #else
+        DEBUG('a', "No space on memory to allocate the process.");
+        ASSERT(false);
+        #endif
+      }
 
       pageTable[page].physicalPage = physicalPage;
       pageTable[page].valid        = true;
@@ -256,7 +249,11 @@ AddressSpace::LoadTLB(unsigned page)
 
         char * swap = new char[7];
         sprintf(swap, "SWAP.%u", currentThread->sid);
-        SwapToMem(swap, pageTable[page].virtualPage, physicalPage);
+
+        OpenFile* openFile = fileSystem->Open(swap);
+        openFile->ReadAt(machine->mainMemory + physicalPage*PAGE_SIZE, PAGE_SIZE, pageTable[page].virtualPage);
+        delete openFile;
+
         delete swap;
       }else{
         //cargar la pagina del ejecutable

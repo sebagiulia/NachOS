@@ -59,9 +59,6 @@ private:
     /// Select a random physical page number.
     int PickVictim();
 
-    void MemToSwap(int pPage, char *fileName, unsigned vPage);
-    void SwapToMem(char *fileName, unsigned vPage, int pPage);
-
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
     int nextReplace;
