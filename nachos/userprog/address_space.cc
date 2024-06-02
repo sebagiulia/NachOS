@@ -165,7 +165,14 @@ AddressSpace::InitRegisters()
 /// For now, nothing!
 void
 AddressSpace::SaveState()
-{}
+{
+    if((machine->GetMMU()->tlb) != nullptr){
+      for (unsigned i = 0; i < TLB_SIZE; i++) {
+        pageTable[machine->GetMMU()->tlb[i].virtualPage].use = machine->GetMMU()->tlb[i].use;
+        pageTable[machine->GetMMU()->tlb[i].virtualPage].dirty = machine->GetMMU()->tlb[i].dirty;
+      }
+    }
+}
 
 /// On a context switch, restore the machine state so that this address space
 /// can run.
@@ -176,7 +183,7 @@ AddressSpace::RestoreState()
 {
     if((machine->GetMMU()->tlb) != nullptr){
       for (unsigned i = 0; i < TLB_SIZE; i++) {
-            machine->GetMMU()->tlb[i].valid = false;
+        machine->GetMMU()->tlb[i].valid = false;
       }
     nextReplace = 0;
     }
@@ -222,6 +229,7 @@ AddressSpace::LoadTLB(unsigned page)
         unsigned victimVirtualPage = memoryPages->VirtualPage(physicalPage);
         // ¿aca faltaria poner en falso el bit valid de la entrada victimVirtualPage de la pageTable de victimProccessId?
         // capaz eso lo deberia cambiar el proceso victimProccessId cuando retoma el procesador chequeando el coremap
+        // ademas tambien habria que chequear el bit dirty de la victimVirtualPage, ya que si es false no hace falta llevarla a swap
         memoryPages->Mark(physicalPage, pageTable[page].virtualPage);
 
         char *victimSwap = new char[7];
@@ -275,6 +283,9 @@ AddressSpace::LoadTLB(unsigned page)
         //sino ya esta lleno de ceros
       }
     }
+
+    pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].use = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].use;
+    pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].dirty = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].dirty;
     machine->GetMMU()->tlb[nextReplace % TLB_SIZE] = pageTable[page];
     nextReplace++;
     nextReplace%=TLB_SIZE;
