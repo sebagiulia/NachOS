@@ -189,13 +189,17 @@ AddressSpace::RestoreState()
 void
 AddressSpace::MemToSwap(int pPage, char *fileName, unsigned vPage)
 {
-
+    OpenFile* openFile = fileSystem->Open(fileName);
+    openFile->WriteAt(machine->mainMemory + pPage*PAGE_SIZE, PAGE_SIZE, vPage);
+    delete openFile;
 }
 
 void
 AddressSpace::SwapToMem(char *fileName, unsigned vPage, int pPage)
 {
-
+    OpenFile* openFile = fileSystem->Open(fileName);
+    openFile->ReadAt(machine->mainMemory + pPage*PAGE_SIZE, PAGE_SIZE, vPage);
+    delete openFile;
 }
 
 bool
@@ -203,10 +207,13 @@ AddressSpace::LoadTLB(unsigned page)
 {
     ASSERT(machine->GetMMU()->tlb != nullptr);
     if(page < 0 || page > numPages) return false;
+
     if(!pageTable[page].valid){
       DEBUG('e', "Page %d to be loaded in page table\n", page);
+
       //buscar pagina fisica
       int physicalPage = memoryPages->Find(pageTable[page].virtualPage);
+
       if(physicalPage == -1){
         DEBUG('a', "Swapping page.");
 
@@ -219,16 +226,23 @@ AddressSpace::LoadTLB(unsigned page)
 
         char *victimSwap = new char[7];
         sprintf(victimSwap, "SWAP.%u", victimProccessId);
+        //primero deberiamos chequear que la pagina no este ya en swap
         MemToSwap(physicalPage, victimSwap, victimVirtualPage);
         delete victimSwap;
 
         ASSERT(false); //esto no iria mas
       }
+
+      bool inSwap;
+      if(pageTable[page].physicalPage == (unsigned)-1) inSwap = false;
+      else inSwap = true;
+
       pageTable[page].physicalPage = physicalPage;
       pageTable[page].valid        = true;
       char *mainMemory = machine->mainMemory;
       memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
-      if(0){
+
+      if(inSwap){ // chequear que la pagina este en swap
         //cargar pagina de swap
         DEBUG('a', "Swapping page.");
 
@@ -243,16 +257,16 @@ AddressSpace::LoadTLB(unsigned page)
         uint32_t initDataSize = exe.GetInitDataSize();
         uint32_t physicalAddr = (physicalPage * PAGE_SIZE);
         if(page * PAGE_SIZE < codeSize){ //cargar segmento de codigo
-            uint32_t sizeToRead = std::min(codeSize-(page*PAGE_SIZE), PAGE_SIZE);
-            exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE);
-            if(sizeToRead == PAGE_SIZE){
-              pageTable[page].readOnly = true;
-            }
-            else if(initDataSize > 0){ //tengo que seguir llenando con initdata
-              uint32_t newSizeToRead = PAGE_SIZE - sizeToRead;
-              newSizeToRead = std::min(newSizeToRead, codeSize+initDataSize-(page*PAGE_SIZE));
-              exe.ReadDataBlock(&mainMemory[physicalAddr+sizeToRead], newSizeToRead, 0);
-            }
+          uint32_t sizeToRead = std::min(codeSize-(page*PAGE_SIZE), PAGE_SIZE);
+          exe.ReadCodeBlock(&mainMemory[physicalAddr], sizeToRead, page*PAGE_SIZE);
+          if(sizeToRead == PAGE_SIZE){
+            pageTable[page].readOnly = true;
+          }
+          else if(initDataSize > 0){ //tengo que seguir llenando con initdata
+            uint32_t newSizeToRead = PAGE_SIZE - sizeToRead;
+            newSizeToRead = std::min(newSizeToRead, codeSize+initDataSize-(page*PAGE_SIZE));
+            exe.ReadDataBlock(&mainMemory[physicalAddr+sizeToRead], newSizeToRead, 0);
+          }
         }
         else if(page * PAGE_SIZE < initDataSize+codeSize){ //cargar initdata
           uint32_t sizeToRead = std::min(codeSize+initDataSize-(page*PAGE_SIZE), PAGE_SIZE);
