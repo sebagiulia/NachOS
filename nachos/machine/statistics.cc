@@ -22,6 +22,8 @@ Statistics::Statistics()
     numConsoleCharsRead = numConsoleCharsWritten = 0;
     numPageFaults = 0;
     memoryAccess = 0;
+    bringFromSwap = 0;
+    carryToSwap = 0;
 #ifdef DFS_TICKS_FIX
     tickResets = 0;
 #endif
@@ -46,4 +48,8 @@ Statistics::Print()
            numConsoleCharsRead, numConsoleCharsWritten);
     printf("Paging: faults %lu\n", numPageFaults);
     printf("Paging: hits percentage: %lf\n", (double)(memoryAccess-numPageFaults)/memoryAccess * 100);
+#ifdef SWAP
+    printf("Swapping: pages carried to swap space: %lu\n", carryToSwap);
+    printf("Swapping: pages brought from swap space: %lu\n", bringFromSwap);
+#endif
 }

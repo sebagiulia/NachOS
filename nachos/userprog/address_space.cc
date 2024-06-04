@@ -10,6 +10,7 @@
 #include "executable.hh"
 #include "threads/system.hh"
 #include "lib/coremap.hh"
+#include "machine/statistics.hh"
 #include <string.h>
 #include <algorithm>
 #include <time.h>
@@ -214,24 +215,23 @@ AddressSpace::LoadTLB(unsigned page)
         physicalPage = PickVictim();
         unsigned victimProccessId = memoryPages->ProccessID(physicalPage);
         unsigned victimVirtualPage = memoryPages->VirtualPage(physicalPage);
-        // ¿aca faltaria poner en falso el bit valid de la entrada victimVirtualPage de la pageTable de victimProccessId?
-        // capaz eso lo deberia cambiar el proceso victimProccessId cuando retoma el procesador chequeando el coremap
-        // ademas tambien habria que chequear el bit dirty de la victimVirtualPage, ya que si es false no hace falta llevarla a swap
+
+        processesTable->Get(victimProccessId)->space->pageTable[victimVirtualPage].valid = false;
+
         memoryPages->Mark(physicalPage, pageTable[page].virtualPage);
 
         char *victimSwap = new char[7];
         sprintf(victimSwap, "SWAP.%u", victimProccessId);
 
-        //primero deberiamos chequear que la pagina no este ya en swap
+        //primero deberiamos chequear que la pagina no este ya en swap. Si no esta la paso. Si esta entonces chequeo el bit dirty. Si es true la paso, sino no
         OpenFile* openFile = fileSystem->Open(victimSwap);
         openFile->WriteAt(machine->mainMemory + physicalPage*PAGE_SIZE, PAGE_SIZE, victimVirtualPage);
         delete openFile;
 
         delete victimSwap;
 
+        stats->carryToSwap++;
         if(pageTable[page].physicalPage != (unsigned)-1) inSwap = true;
-
-        ASSERT(false); //esto no iria mas
         #else
         DEBUG('a', "No space on memory to allocate the process.");
         ASSERT(false);
@@ -255,6 +255,8 @@ AddressSpace::LoadTLB(unsigned page)
         delete openFile;
 
         delete swap;
+
+        stats->bringFromSwap++;
       }else{
         //cargar la pagina del ejecutable
         Executable exe (exe_file);
