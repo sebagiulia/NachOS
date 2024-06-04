@@ -51,7 +51,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
         int physicalPage = memoryPages->Find(pageTable[i].virtualPage);
-        //DEBUG('a', "asigno a pagina virtual %d pagina fisica %d\n", i, physicalPage);
         if(physicalPage == -1){
           DEBUG('a', "No space on memory to allocate the process.");
           ASSERT(false);
@@ -167,11 +166,15 @@ AddressSpace::InitRegisters()
 void
 AddressSpace::SaveState()
 {
-    if((machine->GetMMU()->tlb) != nullptr){
+    if((machine->GetMMU()->tlb) != nullptr && currentThread->space != nullptr){
+      DEBUG('q', "entre a savestate\n");
       for (unsigned i = 0; i < TLB_SIZE; i++) {
-        pageTable[machine->GetMMU()->tlb[i].virtualPage].use = machine->GetMMU()->tlb[i].use;
-        pageTable[machine->GetMMU()->tlb[i].virtualPage].dirty = machine->GetMMU()->tlb[i].dirty;
+        if(machine->GetMMU()->tlb[i].valid){
+          pageTable[machine->GetMMU()->tlb[i].virtualPage].use = machine->GetMMU()->tlb[i].use;
+          pageTable[machine->GetMMU()->tlb[i].virtualPage].dirty = machine->GetMMU()->tlb[i].dirty;
+        }  
       }
+      DEBUG('q', "sali de  savestate\n");
     }
 }
 
@@ -210,7 +213,8 @@ AddressSpace::LoadTLB(unsigned page)
 
       if(physicalPage == -1){
         #ifdef SWAP
-        DEBUG('a', "Swapping page.");
+        //bandera w para debugear mas limpio
+        DEBUG('w', "Swapping page.\n");
 
         physicalPage = PickVictim();
         unsigned victimProccessId = memoryPages->ProccessID(physicalPage);
@@ -231,21 +235,22 @@ AddressSpace::LoadTLB(unsigned page)
         delete victimSwap;
 
         stats->carryToSwap++;
-        if(pageTable[page].physicalPage != (unsigned)-1) inSwap = true;
         #else
-        DEBUG('a', "No space on memory to allocate the process.");
+        DEBUG('a', "No space on memory to allocate the process.\n");
         ASSERT(false);
         #endif
       }
-
+      #ifdef SWAP
+      if(pageTable[page].physicalPage != (unsigned)-1) inSwap = true;
+      #endif
       pageTable[page].physicalPage = physicalPage;
       pageTable[page].valid        = true;
       char *mainMemory = machine->mainMemory;
       memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
-
       if(inSwap){ // chequear que la pagina este en swap
         //cargar pagina de swap
-        DEBUG('a', "Swapping page.");
+        #ifdef SWAP
+        DEBUG('w', "Swapping page.");
 
         char * swap = new char[7];
         sprintf(swap, "SWAP.%u", currentThread->sid);
@@ -257,7 +262,8 @@ AddressSpace::LoadTLB(unsigned page)
         delete swap;
 
         stats->bringFromSwap++;
-      }else{
+        #endif
+      }else{ 
         //cargar la pagina del ejecutable
         Executable exe (exe_file);
         uint32_t codeSize = exe.GetCodeSize();

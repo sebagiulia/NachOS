@@ -510,7 +510,6 @@ SyscallHandler(ExceptionType _et)
               DEBUG('e', "Removing childs from thread %s\n", currentThread->GetName());
               (currentThread->childList->Pop())->Join();
             }
-
             currentThread->Finish(status);
             break;
         }

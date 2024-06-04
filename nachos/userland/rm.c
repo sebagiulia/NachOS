@@ -1,5 +1,5 @@
 #include "syscall.h"
-
+#include "lib.c"
 #define ARGC_ERROR    "Error: missing argument."
 #define REMOVE_ERROR  "Error: could not remove file."
 

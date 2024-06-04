@@ -70,17 +70,14 @@ Thread::Thread(const char *threadName, bool willJoin, int prior)
 Thread::~Thread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
-
+ 
     ASSERT(this != currentThread);
     if (stack != nullptr) {
         SystemDep::DeallocBoundedArray((char *) stack,
                                        STACK_SIZE * sizeof *stack);
     }
-    delete channel;
-
     #ifdef USER_PROGRAM
     delete openFilesTable;
-    delete childList;
     #endif
 }
 
@@ -205,11 +202,13 @@ void
 Thread::Finish(int exitstatus)
 {
     interrupt->SetLevel(INT_OFF);
+
     ASSERT(this == currentThread);
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
         #ifdef USER_PROGRAM
             delete currentThread->space;
-            //Hay que cerrar cada archivo de openFilesTable?
+            currentThread->space = nullptr;
+             //Hay que cerrar cada archivo de openFilesTable?
         #endif
     if(channel != nullptr){
         channel->Send(exitstatus);
@@ -282,7 +281,6 @@ Thread::Sleep()
     while ((nextThread = scheduler->FindNextToRun()) == nullptr) {
         interrupt->Idle();  // No one to run, wait for an interrupt.
     }
-
     scheduler->Run(nextThread);  // Returns when we have been signalled.
 }
 
