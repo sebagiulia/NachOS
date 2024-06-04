@@ -208,7 +208,7 @@ AddressSpace::LoadTLB(unsigned page)
       int physicalPage = memoryPages->Find(pageTable[page].virtualPage);
 
       if(physicalPage == -1){
-        #ifndef SWAP
+        #ifdef SWAP
         DEBUG('a', "Swapping page.");
 
         physicalPage = PickVictim();

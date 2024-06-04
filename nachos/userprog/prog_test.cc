@@ -36,10 +36,12 @@ StartProcess(const char *filename)
     currentThread->sid = sid;
     currentThread->space = space;
 
+    #ifdef SWAP
     char *swapFileName = new char[7];
     sprintf(swapFileName, "SWAP.%u", sid);
     fileSystem->Create(swapFileName, space->NumPages()*PAGE_SIZE);
     delete swapFileName;
+    #endif
 
     //delete executable;
 
