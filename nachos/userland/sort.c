@@ -7,7 +7,7 @@
 
 
 #include "syscall.h"
-
+#include "lib.c"
 
 #define DIM  1024
 
@@ -35,7 +35,10 @@ main(void)
         }
     }
 
-    // And then we're done -- should be 0!
-    Halt();
+    // And then we're done -- should be 0! --> Ordena mal, da DIM-1
+    char res[5];
+    itoa(A[0], res);
+    putstr(res);
+    //Halt();
     return A[0];
 }

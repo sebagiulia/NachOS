@@ -62,7 +62,7 @@ DefaultHandler(ExceptionType et)
 
 static void PageFaultHandler(ExceptionType et){
   int virtualAddr = machine->ReadRegister(BAD_VADDR_REG);
-  //DEBUG('e', "Page Fault Exception at addr %d\n", virtualAddr);
+  //DEBUG('w', "Page Fault Exception at addr %d\n", virtualAddr);
   int page = virtualAddr / PAGE_SIZE;
   ASSERT(currentThread->space->LoadTLB(unsigned(page)));
 }
@@ -81,6 +81,12 @@ static void ReadOnlyHandler(ExceptionType et){
 
 static void InitNewThread(void *args)
 {
+  #ifdef SWAP
+    char *swapFileName = new char[7];
+    sprintf(swapFileName, "SWAP.%u", currentThread->sid);
+    fileSystem->Create(swapFileName, currentThread->space->NumPages()*PAGE_SIZE);
+    delete swapFileName;
+  #endif
   currentThread->space->InitRegisters();
 	currentThread->space->RestoreState();
   if(args != nullptr){
