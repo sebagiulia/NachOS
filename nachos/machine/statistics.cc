@@ -22,8 +22,10 @@ Statistics::Statistics()
     numConsoleCharsRead = numConsoleCharsWritten = 0;
     numPageFaults = 0;
     memoryAccess = 0;
+#ifdef SWAP
     bringFromSwap = 0;
     carryToSwap = 0;
+#endif
 #ifdef DFS_TICKS_FIX
     tickResets = 0;
 #endif

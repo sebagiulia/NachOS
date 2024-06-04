@@ -50,11 +50,13 @@ public:
     /// Number of memory access.
     unsigned long memoryAccess;
 
+#ifdef SWAP
     /// Number of pages brought from swap space
     unsigned long bringFromSwap;
 
     /// Number of pages carried to swap space
     unsigned long carryToSwap;
+#endif
 
 #ifdef DFS_TICKS_FIX
     /// Number of times the tick count gets reset.
