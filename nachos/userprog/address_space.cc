@@ -254,7 +254,7 @@ AddressSpace::LoadTLB(unsigned page)
         bool mustSwap = true;
         AddressSpace *victimSpace = processesTable->Get(victimProccessId)->space;
         mustSwap = mustSwap && !victimSpace->ReadOnly(victimVirtualPage);
-       // mustSwap = mustSwap && (!victimSpace->InSwap[victimVirtualPage] || victimSpace->Dirty(victimVirtualPage));
+        mustSwap = mustSwap && (!victimSpace->InSwap[victimVirtualPage] || victimSpace->Dirty(victimVirtualPage));
         if(mustSwap){
           char *victimSwap = new char[7];
           sprintf(victimSwap, "SWAP.%u", victimProccessId);
