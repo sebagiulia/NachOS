@@ -78,6 +78,7 @@ Thread::~Thread()
     }
     #ifdef USER_PROGRAM
     delete openFilesTable;
+    processesTable->Remove(sid);
     #endif
 }
 

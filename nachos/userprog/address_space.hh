@@ -55,7 +55,13 @@ public:
 
     bool ReadOnly(unsigned page);
 
+    bool Dirty(unsigned page);
+
     void Invalidate(unsigned page);
+
+    #ifdef SWAP
+    bool *InSwap;
+    #endif
 
     OpenFile *exe_file;
 

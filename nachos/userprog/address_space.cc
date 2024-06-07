@@ -47,6 +47,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     // First, set up the translation.
 
     pageTable = new TranslationEntry[numPages];
+
+    #ifdef SWAP
+    InSwap = new bool[numPages];
+    #endif
+
     #ifndef DEMAND_LOADING
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
@@ -113,8 +118,13 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
+        #ifdef SWAP
+        InSwap[i] = false;
+        #endif
     }
   #endif
+
+  
 
 }
 
@@ -129,6 +139,16 @@ AddressSpace::~AddressSpace()
     }
     delete [] pageTable;
     delete exe_file;
+    
+    #ifdef SWAP
+    delete [] InSwap;
+    char * swap = new char[7];
+    sprintf(swap, "SWAP.%u", currentThread->sid);
+    fileSystem->Remove(swap);
+    delete [] swap;
+
+    #endif
+
 }
 
 /// Set the initial values for the user-level register set.
@@ -204,7 +224,6 @@ AddressSpace::LoadTLB(unsigned page)
     if(!pageTable[page].valid){
       DEBUG('e', "Page %d to be loaded in page table\n", page);
 
-      bool inSwap = false;
 
       //buscar pagina fisica
       unsigned physicalPage = memoryPages->Find(pageTable[page].virtualPage);
@@ -221,40 +240,49 @@ AddressSpace::LoadTLB(unsigned page)
         processesTable->Get(victimProccessId)->space->Invalidate(victimVirtualPage);
         if(victimProccessId == currentThread->sid){
           DEBUG('w', "me quite una pagina a mi mismo, invalidando en TLB\n");
+          //invalido en tlb y ademas sincronizo bit dirty, para poder usarlo mas abajo
           for(unsigned i = 0; i < TLB_SIZE; i++){
-            if(machine->GetMMU()->tlb[i].physicalPage == physicalPage) machine->GetMMU()->tlb[i].valid = false; 
+            if(machine->GetMMU()->tlb[i].physicalPage == physicalPage && machine->GetMMU()->tlb[i].valid) {
+              unsigned virtualPage = machine->GetMMU()->tlb[i].virtualPage;
+              pageTable[virtualPage].dirty = machine->GetMMU()->tlb[i].dirty;
+              pageTable[virtualPage].use = machine->GetMMU()->tlb[i].use;
+              machine->GetMMU()->tlb[i].valid = false;
+            } 
           }
         }
-
         memoryPages->Mark(physicalPage, pageTable[page].virtualPage);
-        if(!processesTable->Get(victimProccessId)->space->ReadOnly(victimVirtualPage)){
+        bool mustSwap = true;
+        AddressSpace *victimSpace = processesTable->Get(victimProccessId)->space;
+        mustSwap = mustSwap && !victimSpace->ReadOnly(victimVirtualPage);
+       // mustSwap = mustSwap && (!victimSpace->InSwap[victimVirtualPage] || victimSpace->Dirty(victimVirtualPage));
+        if(mustSwap){
           char *victimSwap = new char[7];
           sprintf(victimSwap, "SWAP.%u", victimProccessId);
           DEBUG('w', "mandando pagina %d a swap\n", physicalPage);
-          // todo: primero deberiamos chequear que la pagina no este ya en swap. Si no esta la paso.
-          // todo: Si esta entonces chequeo el bit dirty. Si es true la paso, sino no
           OpenFile* openFile = fileSystem->Open(victimSwap);
           openFile->WriteAt(machine->mainMemory + physicalPage*PAGE_SIZE, PAGE_SIZE, victimVirtualPage*PAGE_SIZE);
-
           delete openFile;
-          delete victimSwap;
-          
+          delete [] victimSwap;
+          victimSpace->InSwap[victimVirtualPage] = true;
           stats->carryToSwap++;
+        }
+        else{
+          DEBUG('w', "no me hizo falta mandar a swap");
         }
         #else
         DEBUG('a', "No space on memory to allocate the process.\n");
         ASSERT(false);
         #endif
       }
+      bool inSwap = false;
       #ifdef SWAP
-      if(pageTable[page].physicalPage != (unsigned)-1 && !pageTable[page].readOnly) inSwap = true;
+      inSwap = InSwap[page];
       #endif
       pageTable[page].physicalPage = physicalPage;
       pageTable[page].valid        = true;
       char *mainMemory = machine->mainMemory;
       memset(mainMemory + physicalPage*PAGE_SIZE, 0, PAGE_SIZE);
-      if(inSwap){ // chequear que la pagina este en swap
-        //cargar pagina de swap
+      if(inSwap){
         #ifdef SWAP
         DEBUG('w', "Trayendo pagina virtual %d de swap\n", page);
 
@@ -264,7 +292,9 @@ AddressSpace::LoadTLB(unsigned page)
         OpenFile* openFile = fileSystem->Open(swap);
         openFile->ReadAt(machine->mainMemory + physicalPage*PAGE_SIZE, PAGE_SIZE, pageTable[page].virtualPage * PAGE_SIZE);
         delete openFile;
-        delete swap;
+        delete [] swap;
+        pageTable[page].dirty = false;
+        pageTable[page].use = false;
 
         stats->bringFromSwap++;
         #endif
@@ -293,7 +323,7 @@ AddressSpace::LoadTLB(unsigned page)
         //sino ya esta lleno de ceros
       }
     }
-    DEBUG('w', "Reemplazando en tlb\n");
+    //DEBUG('w', "Reemplazando en tlb\n");
     if(machine->GetMMU()->tlb[nextReplace % TLB_SIZE].valid){
       pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].use = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].use;
       pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].dirty = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].dirty;
@@ -326,4 +356,8 @@ void AddressSpace::Invalidate(unsigned page){
 
 bool AddressSpace::ReadOnly(unsigned page){
   return pageTable[page].readOnly;
+}
+
+bool AddressSpace::Dirty(unsigned page){
+  return pageTable[page].dirty;
 }
