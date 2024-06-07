@@ -27,7 +27,7 @@
 #include "threads/system.hh"
 #include "exception.hh"
 #include <stdio.h>
-
+#include "executable.hh"
 
 static void
 IncrementPC()
@@ -439,6 +439,15 @@ SyscallHandler(ExceptionType _et)
               break;
             }
 
+            Executable exe (executable);
+
+            if(!exe.CheckMagic()){
+              DEBUG('e', "File %s is not noff\n", filename);
+              machine->WriteRegister(2,-1);
+              break;
+            }
+
+
             unsigned spaceid = StartNewProcess(executable,nullptr);
             DEBUG('e', "Success: File %s executed.\n", filename);
             machine->WriteRegister(2, spaceid);
@@ -471,6 +480,14 @@ SyscallHandler(ExceptionType _et)
                 OpenFile *executable = fileSystem->Open(filename);
                 if(executable == nullptr) {
                   DEBUG('e', "Unable to execute file %s", filename);
+                  machine->WriteRegister(2,-1);
+                  break;
+                }
+
+                Executable exe (executable);
+
+                if(!exe.CheckMagic()){
+                  DEBUG('e', "File %s is not noff\n", filename);
                   machine->WriteRegister(2,-1);
                   break;
                 }

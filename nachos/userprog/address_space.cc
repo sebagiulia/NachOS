@@ -24,7 +24,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     Executable exe (executable_file);
 
-    ASSERT(exe.CheckMagic());     // -----Un programa puede romper el so si no es noff(arreglar) -Checkear en exec
+    ASSERT(exe.CheckMagic());
 
     exe_file = executable_file;
 
