@@ -167,14 +167,12 @@ void
 AddressSpace::SaveState()
 {
     if((machine->GetMMU()->tlb) != nullptr && currentThread->space != nullptr){
-      DEBUG('q', "entre a savestate\n");
       for (unsigned i = 0; i < TLB_SIZE; i++) {
         if(machine->GetMMU()->tlb[i].valid){
           pageTable[machine->GetMMU()->tlb[i].virtualPage].use = machine->GetMMU()->tlb[i].use;
           pageTable[machine->GetMMU()->tlb[i].virtualPage].dirty = machine->GetMMU()->tlb[i].dirty;
         }  
       }
-      DEBUG('q', "sali de  savestate\n");
     }
 }
 
@@ -220,7 +218,7 @@ AddressSpace::LoadTLB(unsigned page)
         unsigned victimProccessId = memoryPages->ProccessID(physicalPage);
         unsigned victimVirtualPage = memoryPages->VirtualPage(physicalPage);
 
-        processesTable->Get(victimProccessId)->space->pageTable[victimVirtualPage].valid = false;
+        processesTable->Get(victimProccessId)->space->Invalidate(victimVirtualPage);
         if(victimProccessId == currentThread->sid){
           DEBUG('w', "me quite una pagina a mi mismo, invalidando en TLB\n");
           for(unsigned i = 0; i < TLB_SIZE; i++){
@@ -229,7 +227,7 @@ AddressSpace::LoadTLB(unsigned page)
         }
 
         memoryPages->Mark(physicalPage, pageTable[page].virtualPage);
-        if(!processesTable->Get(victimProccessId)->space->pageTable[victimVirtualPage].readOnly){
+        if(!processesTable->Get(victimProccessId)->space->ReadOnly(victimVirtualPage)){
           char *victimSwap = new char[7];
           sprintf(victimSwap, "SWAP.%u", victimProccessId);
           DEBUG('w', "mandando pagina %d a swap\n", physicalPage);
@@ -296,8 +294,10 @@ AddressSpace::LoadTLB(unsigned page)
       }
     }
     DEBUG('w', "Reemplazando en tlb\n");
-    pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].use = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].use;
-    pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].dirty = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].dirty;
+    if(machine->GetMMU()->tlb[nextReplace % TLB_SIZE].valid){
+      pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].use = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].use;
+      pageTable[machine->GetMMU()->tlb[nextReplace % TLB_SIZE].virtualPage].dirty = machine->GetMMU()->tlb[nextReplace % TLB_SIZE].dirty;
+    }
     machine->GetMMU()->tlb[nextReplace % TLB_SIZE] = pageTable[page];
     nextReplace++;
     nextReplace%=TLB_SIZE;
@@ -317,4 +317,13 @@ AddressSpace::PickVictim()
     //srand(time(NULL));
     int i = rand() % memoryPages->NumItems();
     return i;
+}
+
+
+void AddressSpace::Invalidate(unsigned page){
+  pageTable[page].valid = false;
+}
+
+bool AddressSpace::ReadOnly(unsigned page){
+  return pageTable[page].readOnly;
 }

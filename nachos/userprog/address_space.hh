@@ -53,6 +53,10 @@ public:
 
     bool LoadTLB(unsigned page);
 
+    bool ReadOnly(unsigned page);
+
+    void Invalidate(unsigned page);
+
     OpenFile *exe_file;
 
 private:
