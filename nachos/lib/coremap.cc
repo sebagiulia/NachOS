@@ -9,6 +9,9 @@ Coremap::Coremap(unsigned nitems)
     bitmap         = new Bitmap(nitems);
     virtualPage    = new unsigned [nitems];
     proccessID     = new unsigned [nitems];
+    #ifdef PRPOLICY_FIFO
+    fifoPointer  = 0;
+    #endif
 }
 
 Coremap::~Coremap()
@@ -65,3 +68,14 @@ Coremap::NumItems()
 {
     return numItems;
 }
+
+#ifdef PRPOLICY_FIFO 
+unsigned
+Coremap::NextFIFOPointer()
+{
+    unsigned p = fifoPointer;
+    fifoPointer = (fifoPointer + 1) % numItems;
+    return p;
+}
+#endif
+

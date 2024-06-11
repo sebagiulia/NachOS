@@ -33,11 +33,19 @@ public:
     /// Return numItems
     unsigned NumItems();
 
+    #ifdef PRPOLICY_FIFO
+    unsigned NextFIFOPointer();
+    #endif
 private:
+
+    #ifdef PRPOLICY_FIFO
+    unsigned fifoPointer;
+    #endif
 
     unsigned numItems;
 
     Bitmap *bitmap;
+
 
     unsigned *virtualPage;
 

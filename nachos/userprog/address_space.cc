@@ -344,7 +344,10 @@ AddressSpace::NumPages()
 int
 AddressSpace::PickVictim()
 {
-    //srand(time(NULL));
+  #ifdef PRPOLICY_FIFO 
+    return memoryPages->NextFIFOPointer(); 
+  #endif
+      //srand(time(NULL));
     int i = rand() % memoryPages->NumItems();
     return i;
 }
