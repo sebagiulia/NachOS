@@ -33,14 +33,11 @@ public:
     /// Return numItems
     unsigned NumItems();
 
-    #ifdef PRPOLICY_FIFO
     unsigned NextFIFOPointer();
-    #endif
+    void UpdateFIFOPointer(unsigned pointer);
 private:
 
-    #ifdef PRPOLICY_FIFO
     unsigned fifoPointer;
-    #endif
 
     unsigned numItems;
 

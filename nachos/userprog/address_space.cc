@@ -344,6 +344,49 @@ AddressSpace::NumPages()
 int
 AddressSpace::PickVictim()
 {
+
+  #ifdef PRPOLICY_CLOCK
+    int snd = -1, trd = -1, fth = -1;
+    bool dirty = false, use = false;
+    unsigned init = memoryPages->NextFIFOPointer();
+    
+    //Recorre una vuelta entera a la memoryPages
+    for(unsigned i = init, steps = 0; steps < memoryPages->NumItems(); i = memoryPages->NextFIFOPointer(), steps++) {
+      dirty = pageTable[memoryPages->VirtualPage(i)].dirty;
+      use = pageTable[memoryPages->VirtualPage(i)].use;
+      // No fue usada usada recientemente ni está modificada (Primer opción - Se detiene)
+      if(!dirty && !use)
+        return i;
+      // No fue usada recientemente pero si está modificada (Segunda opción)
+      if(snd == -1 && dirty && !use) {
+        snd = i;
+      }
+      // Fue usada recientemente pero no esta modificada (Tercera opción)
+      else if(trd == -1 && !dirty && use) {
+        trd = i;
+      }
+      // Fue usada recientemente y está modificada (Peor opcion)
+      else if(fth == -1){
+        fth = i;
+      } 
+
+      // Vamos desactivando las banderas de uso (Reloj)
+      pageTable[memoryPages->VirtualPage(i)].use = false;
+    }
+
+    if(snd != -1) {
+      memoryPages->UpdateFIFOPointer(snd);
+      return snd;
+    } else if (trd != -1) {
+      memoryPages->UpdateFIFOPointer(trd);
+      return trd;
+    } else {
+      memoryPages->UpdateFIFOPointer(fth);
+      return fth;
+    }
+  #endif
+
+
   #ifdef PRPOLICY_FIFO 
     return memoryPages->NextFIFOPointer(); 
   #endif

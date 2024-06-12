@@ -69,7 +69,6 @@ Coremap::NumItems()
     return numItems;
 }
 
-#ifdef PRPOLICY_FIFO 
 unsigned
 Coremap::NextFIFOPointer()
 {
@@ -77,5 +76,10 @@ Coremap::NextFIFOPointer()
     fifoPointer = (fifoPointer + 1) % numItems;
     return p;
 }
-#endif
+
+void
+Coremap::UpdateFIFOPointer(unsigned pointer)
+{
+    fifoPointer = (pointer + 1) % numItems;
+}
 
