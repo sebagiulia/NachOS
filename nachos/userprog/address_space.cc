@@ -371,7 +371,7 @@ AddressSpace::PickVictim()
       } 
 
       // Vamos desactivando las banderas de uso (Reloj)
-      pageTable[memoryPages->VirtualPage(i)].use = false;
+      processesTable->Get(memoryPages->ProccessID(i))->space->pageTable[memoryPages->VirtualPage(i)].use = false;
     }
 
     if(snd != -1) {
