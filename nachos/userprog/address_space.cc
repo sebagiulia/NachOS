@@ -5,6 +5,42 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
+/***
+ * Comparación de políticas: sort - matmult >> TLB 4 pages, MEMORY 32 pages
+ * matmult:
+ *       Política: FIFO
+ *                 Fallos de memoria:  110
+ *                 Accesos a disco:   105
+ *                 Accesos a memoria: 747059
+ * 
+ *       Política: Algoritmo mejorado del reloj 
+ *                 Fallos de memoria: 113
+ *                 Accesos a disco: 79
+ *                 Accesos a memoria: 747058
+ *       
+ *       Política: Algoritmo ideal
+                   Fallos de memoria:  ***
+ *                 Accesos a disco:   ***
+ *                 Accesos a memoria: ***
+ * 
+ * 
+ * sort:
+ *       Política: FIFO 
+ *                 Fallos de memoria:  3182
+ *                 Accesos a disco:   5536
+ *                 Accesos a memoria: 22614330
+ * 
+ *       Política: Algoritmo mejorado del reloj 
+ *                 Fallos de memoria:  2041     
+ *                 Accesos a disco:   3413      
+ *                 Accesos a memoria: 22614283
+ *       
+ *       Política: Algoritmo ideal
+ *                 Fallos de memoria:  ***
+ *                 Accesos a disco:   ***
+ *                 Accesos a memoria: ***
+*/
+
 
 #include "address_space.hh"
 #include "executable.hh"
@@ -214,7 +250,7 @@ AddressSpace::RestoreState()
       machine->GetMMU()->pageTableSize = numPages;
     }
 }
-
+int fauls = 0;
 bool
 AddressSpace::LoadTLB(unsigned page)
 {
@@ -222,8 +258,8 @@ AddressSpace::LoadTLB(unsigned page)
     if(page < 0 || page >= numPages) return false;
 
     if(!pageTable[page].valid){
+      stats->memoryPageFaults++;
       DEBUG('e', "Page %d to be loaded in page table\n", page);
-
 
       //buscar pagina fisica
       unsigned physicalPage = memoryPages->Find(pageTable[page].virtualPage);

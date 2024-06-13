@@ -22,6 +22,7 @@ Statistics::Statistics()
     numConsoleCharsRead = numConsoleCharsWritten = 0;
     numPageFaults = 0;
     memoryAccess = 0;
+    memoryPageFaults = 0;
 #ifdef SWAP
     bringFromSwap = 0;
     carryToSwap = 0;
@@ -48,9 +49,14 @@ Statistics::Print()
     printf("Disk I/O: reads %lu, writes %lu\n", numDiskReads, numDiskWrites);
     printf("Console I/O: reads %lu, writes %lu\n",
            numConsoleCharsRead, numConsoleCharsWritten);
-    printf("Paging: faults %lu\n", numPageFaults);
-    printf("Paging: hits percentage: %lf\n", (double)(memoryAccess-numPageFaults)/memoryAccess * 100);
+
+
+    printf("Paging: Memory access %lu\n", memoryAccess);
+    printf("Paging: faults Memory %lu\n", memoryPageFaults);
+    printf("Paging: faults TLB %lu\n", numPageFaults);
+    printf("Paging: Hits TLB percentage: %.2lf\n", (double)(memoryAccess-numPageFaults)/memoryAccess * 100);
 #ifdef SWAP
+    printf("Paging: Hits Memory percentage: %.2lf\n", (double)(memoryAccess - bringFromSwap)/memoryAccess * 100);
     printf("Swapping: pages carried to swap space: %lu\n", carryToSwap);
     printf("Swapping: pages brought from swap space: %lu\n", bringFromSwap);
 #endif

@@ -39,6 +39,6 @@ main(void)
     char res[5];
     itoa(A[0], res);
     putstr(res);
-    //Halt();
+    Halt();
     return A[0];
 }

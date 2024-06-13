@@ -50,6 +50,9 @@ public:
     /// Number of memory access.
     unsigned long memoryAccess;
 
+    /// Number of memory page faults.
+    unsigned long memoryPageFaults;
+
 #ifdef SWAP
     /// Number of pages brought from swap space
     unsigned long bringFromSwap;
