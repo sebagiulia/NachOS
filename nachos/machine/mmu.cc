@@ -33,6 +33,7 @@
 #include "endianness.hh"
 #include "threads/system.hh"
 #include <stdio.h>
+//#include <iostream>
 extern Machine* machine;
 
 
@@ -193,8 +194,8 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
 
     } else {
         // Use the TLB.
-
         unsigned i;
+        //std::cout << vpn << " ";
         for (i = 0; i < TLB_SIZE; i++) {
             TranslationEntry *e = &tlb[i];
             if (e->valid && e->virtualPage == vpn) {

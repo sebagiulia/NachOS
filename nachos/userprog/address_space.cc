@@ -19,9 +19,9 @@
  *                 Accesos a memoria: 747058
  *       
  *       Política: Algoritmo ideal
-                   Fallos de memoria:  ***
- *                 Accesos a disco:   ***
- *                 Accesos a memoria: ***
+                   Fallos de memoria:  59
+ *                 Accesos a disco:   31
+ *                 Accesos a memoria: 747057
  * 
  * 
  * sort:
@@ -36,9 +36,9 @@
  *                 Accesos a memoria: 22614283
  *       
  *       Política: Algoritmo ideal
- *                 Fallos de memoria:  ***
- *                 Accesos a disco:   ***
- *                 Accesos a memoria: ***
+ *                 Fallos de memoria:  356
+ *                 Accesos a disco:   596
+ *                 Accesos a memoria: 22614301
 */
 
 
@@ -65,7 +65,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     exe_file = executable_file;
 
     nextReplace = 0;
-
+    //pf = 0;
     // How big is address space?
 
     unsigned size = exe.GetSize() + USER_STACK_SIZE;
@@ -426,8 +426,11 @@ AddressSpace::PickVictim()
   #ifdef PRPOLICY_FIFO 
     return memoryPages->NextFIFOPointer(); 
   #endif
-      //srand(time(NULL));
+    //ASSERT(pf < 324);
+    //unsigned reemplazo[] = {0, 0, 0, 0, 0, 1, 31, 29, 30, 29, 30, 29, 29, 27, 28, 27, 28, 27, 27, 25, 26, 25, 26, 25, 25, 23, 24, 23, 24, 23, 23, 21, 22, 21, 22, 21, 21, 19, 20, 19, 20, 19, 19, 17, 18, 17, 18, 17, 17, 15, 16, 15, 16, 15, 15, 27, 14, 27, 14, 27, 27, 12, 13, 12, 13, 13, 10, 11, 10, 11, 11, 8, 9, 8, 9, 9, 6, 7, 6, 7, 7, 4, 5, 4, 5, 5, 29, 3, 29, 3, 3, 30, 30, 25, 30, 30, 23, 28, 28, 28, 28, 21, 26, 26, 26, 26, 19, 24, 24, 24, 24, 17, 22, 22, 22, 22, 15, 20, 20, 20, 20, 27, 18, 18, 18, 18, 13, 16, 16, 16, 16, 11, 14, 14, 14, 14, 26, 12, 12, 12, 12, 10, 10, 10, 10, 8, 8, 8, 8, 6, 6, 6, 6, 4, 4, 4, 4, 29, 29, 29, 29, 25, 25, 25, 25, 24, 24, 24, 24, 22, 22, 22, 22, 20, 20, 20, 20, 18, 18, 18, 18, 16, 16, 16, 16, 14, 14, 14, 14, 12, 12, 12, 12, 10, 10, 10, 10, 8, 8, 8, 8, 6, 6, 6, 6, 4, 4, 4, 4, 14, 14, 14, 14, 29, 29, 29, 25, 25, 25, 24, 24, 24, 22, 22, 22, 20, 20, 20, 18, 18, 18, 16, 16, 16, 23, 23, 23, 21, 21, 21, 19, 19, 19, 17, 17, 17, 15, 15, 15, 27, 27, 27, 13, 13, 13, 11, 11, 11, 21, 21, 21, 26, 26, 9, 9, 7, 7, 5, 5, 3, 3, 30, 30, 28, 28, 19, 19, 17, 17, 15, 15, 27, 27, 13, 13, 11, 11, 21, 21, 26, 26, 9, 9, 7, 7, 27, 27, 5, 3, 30, 28, 19, 17, 15, 12, 10, 8, 6, 4, 14, 29, 25, 15, 1, 3, 4, 4, 5, 6, 7, 8, 7, 3, 0};
     int i = rand() % memoryPages->NumItems();
+    //unsigned i =reemplazo[pf];
+    //spf++;
     return i;
 }
 
