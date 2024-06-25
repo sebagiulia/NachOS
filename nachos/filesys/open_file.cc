@@ -22,17 +22,48 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector)
+OpenFile::OpenFile(int sector, FileHeader *fhdr)
 {
-    hdr = new FileHeader;
-    hdr->FetchFrom(sector);
+    if(fhdr == nullptr) { ///> freeMapFile or directoryFile
+        hdr = new FileHeader;
+        hdr->FetchFrom(sector);
+        sectorhdr = -1; ///> not necessary to know in this case
+
+    } else { ///> file opened by some process
+        hdr = fhdr;
+        hdr->IncrementOpenFilesNumber();
+        sectorhdr = sector;
+    }
     seekPosition = 0;
 }
 
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
-    delete hdr;
+    #ifdef FILESYS
+    hdr->DecrementOpenFilesNumber();
+    if(hdr->OpenFilesNumber() == 0) { /// this is the last reference to the file in memory.
+        if(hdr->removed == true) { 
+            /// If file was removed before, the file is removed from disk too.
+            Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+            freeMap->FetchFrom(fileSystem->GetFreeMapFile());
+
+            hdr->Deallocate(freeMap);  // Remove data blocks.
+            freeMap->Clear(sectorhdr);      // Remove header block.
+
+            freeMap->WriteBack(fileSystem->GetFreeMapFile());  // Flush to disk.
+            delete freeMap;
+        } else {
+            hdr->WriteBack(sectorhdr);
+        }
+        openFileList->RemoveByKey(sectorhdr);
+        delete hdr;
+    } ///else -> there are process that still reference this file, so we do not remove data structure
+    #endif
+    
+    if(sectorhdr == -1) /// freeMapFile or directoryFile
+        delete hdr;
+
 }
 
 /// Change the current location within the open file -- the point at which
