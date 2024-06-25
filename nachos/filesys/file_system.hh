@@ -135,6 +135,9 @@ public:
     /// List all the files and their contents.
     void Print();
 
+    OpenFile *GetFreeMapFile();
+    OpenFile *GetDirectoryFile();
+
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.

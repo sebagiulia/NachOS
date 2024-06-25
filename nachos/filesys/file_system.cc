@@ -46,6 +46,7 @@
 #include "directory.hh"
 #include "file_header.hh"
 #include "lib/bitmap.hh"
+#include "threads/system.hh"
 
 #include <stdio.h>
 #include <string.h>
@@ -224,7 +225,23 @@ FileSystem::Open(const char *name)
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
     if (sector >= 0) {
-        openFile = new OpenFile(sector);  // `name` was found in directory.
+        FileHeader *hdr = nullptr;
+
+        ///> If the file was opened by other process, 
+        ///> the file header is shared.
+        #ifdef FILESYS
+        if(openFileList->HasKey(sector)) {
+            hdr = openFileList->GetByKey(sector);
+        } else {
+            ///> If the file wasn´t opened, its file header
+            ///> is added to a shared list and can be found there 
+            ///> by its sector number at the disk .
+            hdr = new FileHeader;
+            hdr->FetchFrom(sector);
+            openFileList->AppendKey(hdr, sector);
+        }
+        #endif
+        openFile = new OpenFile(sector, hdr);  // `name` was found in directory.
     }
     delete dir;
     return openFile;  // Return null if not found.
@@ -254,22 +271,38 @@ FileSystem::Remove(const char *name)
        delete dir;
        return false;  // file not found
     }
-    FileHeader *fileH = new FileHeader;
-    fileH->FetchFrom(sector);
 
-    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-    freeMap->FetchFrom(freeMapFile);
+    FileHeader *fileH = nullptr;
+    #ifdef FILESYS
+        if(openFileList->HasKey(sector)) { 
+            ///> If the file is still opened by other process we do not remove it from disk yet
+            ///> but we mark it with [removed] and remove its name from the directory.
+            fileH = openFileList->GetByKey(sector);
+            fileH->removed = true;
+            dir->Remove(name);
+            dir->WriteBack(directoryFile);    // Flush to disk.   
+        }
+    #endif
 
-    fileH->Deallocate(freeMap);  // Remove data blocks.
-    freeMap->Clear(sector);      // Remove header block.
-    dir->Remove(name);
+    if(fileH == nullptr) { // File no opened, we remove from disk and directory
+        fileH = new FileHeader;
+        fileH->FetchFrom(sector);
 
-    freeMap->WriteBack(freeMapFile);  // Flush to disk.
-    dir->WriteBack(directoryFile);    // Flush to disk.
-    delete fileH;
+        Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+        freeMap->FetchFrom(freeMapFile);
+
+        dir->Remove(name);
+        fileH->Deallocate(freeMap);  // Remove data blocks.
+        freeMap->Clear(sector);      // Remove header block.
+
+        dir->WriteBack(directoryFile);    // Flush to disk.
+        freeMap->WriteBack(freeMapFile);  // Flush to disk.
+        delete fileH;
+        delete freeMap;
+    }
     delete dir;
-    delete freeMap;
     return true;
+
 }
 
 /// List all the files in the file system directory.
@@ -493,4 +526,14 @@ FileSystem::Print()
     delete dirH;
     delete freeMap;
     delete dir;
+}
+
+OpenFile *
+FileSystem::GetFreeMapFile() {
+    return freeMapFile;
+}
+
+OpenFile *
+FileSystem::GetDirectoryFile() {
+    return directoryFile;
 }
