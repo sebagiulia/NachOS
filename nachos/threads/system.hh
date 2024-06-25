@@ -39,7 +39,6 @@ extern Timer *timer;                 ///< The hardware alarm clock.
 extern Machine *machine;  // User program memory and registers.
 extern SynchConsole *synchConsole;
 extern Table<Thread *> *processesTable;
-
 #endif
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
@@ -50,6 +49,7 @@ extern FileSystem *fileSystem;
 #ifdef FILESYS
 #include "filesys/synch_disk.hh"
 extern SynchDisk *synchDisk;
+extern List<FileHeader *> *openFileList;
 #endif
 
 #endif

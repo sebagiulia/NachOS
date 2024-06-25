@@ -37,6 +37,7 @@ FileSystem *fileSystem;
 
 #ifdef FILESYS
 SynchDisk *synchDisk;
+List<FileHeader *> *openFileList;
 #endif
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
@@ -44,7 +45,6 @@ SynchConsole *synchConsole;
 Machine *machine;  ///< User program memory and registers.
 Coremap *memoryPages;
 Table<Thread *> *processesTable;
-
 #endif
 
 
@@ -206,6 +206,7 @@ Initialize(int argc, char **argv)
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
+    openFileList = new List<FileHeader *>();
 #endif
 
 #ifdef FILESYS_NEEDED
