@@ -15,6 +15,7 @@
 
 #include "raw_file_header.hh"
 #include "lib/bitmap.hh"
+#include "threads/lock.hh"
 
 
 /// The following class defines the Nachos "file header" (in UNIX terms, the
@@ -63,8 +64,14 @@ public:
     /// system at a low level.
     const RawFileHeader *GetRaw() const;
 
+    void IncrementOpenFilesNumber();
+    void DecrementOpenFilesNumber();
+    unsigned OpenFilesNumber();
+
+    bool removed;
 private:
     RawFileHeader raw;
+    Lock *hdrLock; ///> Only one process can update [raw] at a time 
 };
 
 

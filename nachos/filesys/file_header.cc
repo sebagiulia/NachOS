@@ -45,6 +45,10 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
         return false;
     }
 
+    removed = false;
+    hdrLock = new Lock("File header lock");
+
+    raw.numberOpenFiles = 0;
     raw.numBytes = fileSize;
     raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
     if (freeMap->CountClear() < raw.numSectors) {
@@ -71,22 +75,27 @@ FileHeader::Deallocate(Bitmap *freeMap)
     }
 }
 
-/// Fetch contents of file header from disk.
+/// Fetch contents of file header from disk, reinitalized [removed] and [hdrLock].
 ///
 /// * `sector` is the disk sector containing the file header.
 void
 FileHeader::FetchFrom(unsigned sector)
 {
     synchDisk->ReadSector(sector, (char *) &raw);
+    removed = false;
+    hdrLock = new Lock("File header lock");
 }
 
 /// Write the modified contents of the file header back to disk.
-///
+/// [hdrLock] is not necessary after that.
 /// * `sector` is the disk sector to contain the file header.
 void
 FileHeader::WriteBack(unsigned sector)
 {
+    hdrLock->Acquire();
     synchDisk->WriteSector(sector, (char *) &raw);
+    hdrLock->Release();
+    delete hdrLock;
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -122,8 +131,9 @@ FileHeader::Print(const char *title)
     }
 
     printf("    size: %u bytes\n"
+           "    numberOpenFiles: %u\n"
            "    block indexes: ",
-           raw.numBytes);
+           raw.numBytes, raw.numberOpenFiles);
 
     for (unsigned i = 0; i < raw.numSectors; i++) {
         printf("%u ", raw.dataSectors[i]);
@@ -149,4 +159,24 @@ const RawFileHeader *
 FileHeader::GetRaw() const
 {
     return &raw;
+}
+
+void
+FileHeader::IncrementOpenFilesNumber() {        
+    hdrLock->Acquire();
+    raw.numberOpenFiles++;
+    hdrLock->Release();
+
+}
+
+void
+FileHeader::DecrementOpenFilesNumber() {
+    hdrLock->Acquire();
+    raw.numberOpenFiles--;
+    hdrLock->Release();
+}
+
+unsigned
+FileHeader::OpenFilesNumber() {
+    return raw.numberOpenFiles;
 }
