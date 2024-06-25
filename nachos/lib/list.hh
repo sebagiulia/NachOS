@@ -78,6 +78,18 @@ public:
     /// Remove first item from list.
     Item SortedPop(int *keyPtr);
 
+    /// Put item,key at the end of the list 
+    void AppendKey(Item item, int key);
+
+    /// Does the list have some key?
+    bool HasKey(int key);
+
+    /// Return item with key of the list.
+    Item GetByKey(int key);
+
+    /// Remove item with key of the list.
+    void RemoveByKey(int key);
+
 private:
 
     typedef ListElement<Item> ListNode;
@@ -317,6 +329,70 @@ List<Item>::SortedPop(int *keyPtr)
     }
     delete element;
     return thing;
+}
+
+template <class Item>
+void
+List<Item>::AppendKey(Item item, int key)
+{
+    ListNode *element = new ListNode(item, key);
+
+    if (IsEmpty()) {
+        first = element;
+        last = element;
+    } else {  // Put it after last.
+        last->next = element;
+        last = element;
+    }
+}
+
+template <class Item>
+bool
+List<Item>::HasKey(int key)
+{
+
+    for (ListNode *ptr = first; ptr != nullptr; ptr = ptr->next) {
+        if (key == ptr->key) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template <class Item>
+Item
+List<Item>::GetByKey(int key)
+{
+
+    for (ListNode *ptr = first; ptr != nullptr; ptr = ptr->next) {
+        if (key == ptr->key) {
+            return ptr->item;
+        }
+    }
+    return Item();
+}
+
+template <class Item>
+void
+List<Item>::RemoveByKey(int key)
+{
+    if(IsEmpty()) return;
+    if(first->key == key) {
+        if(first == last) {
+            first = nullptr;
+            last = nullptr;
+        } else {
+            first = first->next;
+        }
+        return;
+    }
+
+    for (ListNode *ptr = first; ptr->next != nullptr; ptr = ptr->next) {
+        if (key == ptr->next->key) {
+            ptr->next = ptr->next->next;
+            return;
+        }
+    }
 }
 
 
