@@ -16,10 +16,13 @@
 int
 main(void)
 {
+    SpaceId newProc;
+    Create("test.txt");
     OpenFileId o = Open("test.txt");
-    putstr("Escribo Bye");
-    Write("Bye  ",5,o);
-    putstr("Escribí Bye");
+    newProc = Exec("filetest");
+    putstr("Escribo Hello world");
+    Write("Hello world\n",12,o);
+    putstr("Escribí Hello world");
     Close(o);
     return 0;
 }
