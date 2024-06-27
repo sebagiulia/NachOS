@@ -69,6 +69,7 @@ static const unsigned DIRECTORY_SECTOR = 1;
 /// * `format` -- should we initialize the disk?
 FileSystem::FileSystem(bool format)
 {
+    lockFS = new Lock("File System Lock");
     DEBUG('f', "Initializing the file system.\n");
     if (format) {
         Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
@@ -137,6 +138,7 @@ FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
+    delete lockFS;
 }
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
@@ -167,17 +169,20 @@ FileSystem::~FileSystem()
 bool
 FileSystem::Create(const char *name, unsigned initialSize)
 {
+
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
 
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
+    lockFS->Acquire();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     dir->FetchFrom(directoryFile);
 
     bool success;
 
     if (dir->Find(name) != -1) {
+        DEBUG('f', "Can't create file %s, already in directory\n", name);
         success = false;  // File is already in directory.
     } else {
         Bitmap *freeMap = new Bitmap(NUM_SECTORS);
@@ -185,8 +190,10 @@ FileSystem::Create(const char *name, unsigned initialSize)
         int sector = freeMap->Find();
           // Find a sector to hold the file header.
         if (sector == -1) {
+            DEBUG('f', "Can't allocate file header of %s\n", name);
             success = false;  // No free block for file header.
         } else if (!dir->Add(name, sector)) {
+            DEBUG('f', "No space in directory file %s\n", name);
             success = false;  // No space in directory.
         } else {
             FileHeader *h = new FileHeader;
@@ -197,11 +204,14 @@ FileSystem::Create(const char *name, unsigned initialSize)
                 h->WriteBack(sector);
                 dir->WriteBack(directoryFile);
                 freeMap->WriteBack(freeMapFile);
+            } else {
+                DEBUG('f', "No space for file %s\n", name);
             }
             delete h;
         }
         delete freeMap;
     }
+    lockFS->Release();
     delete dir;
     return success;
 }
@@ -218,6 +228,7 @@ FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
 
+    lockFS->Acquire();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     OpenFile  *openFile = nullptr;
 
@@ -243,6 +254,7 @@ FileSystem::Open(const char *name)
         #endif
         openFile = new OpenFile(sector, hdr);  // `name` was found in directory.
     }
+    lockFS->Release();
     delete dir;
     return openFile;  // Return null if not found.
 }
@@ -264,10 +276,12 @@ FileSystem::Remove(const char *name)
 {
     ASSERT(name != nullptr);
 
+    lockFS->Acquire();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
     if (sector == -1) {
+       lockFS->Release();
        delete dir;
        return false;  // file not found
     }
@@ -300,6 +314,7 @@ FileSystem::Remove(const char *name)
         delete fileH;
         delete freeMap;
     }
+    lockFS->Release();
     delete dir;
     return true;
 

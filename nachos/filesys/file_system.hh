@@ -95,7 +95,6 @@ public:
 #include "directory_entry.hh"
 #include "machine/disk.hh"
 
-
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
 /// files that can be loaded onto the disk.
@@ -105,6 +104,7 @@ static const unsigned DIRECTORY_FILE_SIZE
   = sizeof (DirectoryEntry) * NUM_DIR_ENTRIES;
 
 
+class Lock;
 class FileSystem {
 public:
 
@@ -143,6 +143,8 @@ private:
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
+
+    Lock *lockFS;  
 };
 
 #endif
