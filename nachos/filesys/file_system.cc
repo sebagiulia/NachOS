@@ -232,7 +232,7 @@ FileSystem::Open(const char *name)
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     OpenFile  *openFile = nullptr;
 
-    DEBUG('f', "Opening file %s\n", name);
+    DEBUG('f', "Opening file %s by %s\n", name, currentThread->GetName());
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
     if (sector >= 0) {
@@ -253,6 +253,8 @@ FileSystem::Open(const char *name)
         }
         #endif
         openFile = new OpenFile(sector, hdr);  // `name` was found in directory.
+    } else {
+        DEBUG('f', "File %s not found\n", name);
     }
     lockFS->Release();
     delete dir;
@@ -292,6 +294,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
             if(openFileList->HasKey(sector)) { 
                 ///> If the file is still opened by other process we do not remove it from disk yet
                 ///> but we mark it with [removed] and remove its name from the directory.
+                DEBUG('f', "Remove requested by %s but file %s still opened by "
+                            "other processes, removing from directory.\n", currentThread->GetName(), name);
                 fileH = openFileList->GetByKey(sector);
                 fileH->removed = true;
                 dir->Remove(name);
@@ -300,6 +304,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         #endif
 
         if(fileH == nullptr) { // File no opened, we remove from disk and directory
+            DEBUG('f', "Removing file %s from disk.\n", name);
+            
             fileH = new FileHeader;
             fileH->FetchFrom(sector);
 
@@ -318,7 +324,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         delete dir;
     } else { ///> Remove called from ~OpenFile 
     #ifdef FILESYS
-        if(hdr->removed == true) { 
+        if(hdr->removed == true) {
+            DEBUG('f', "Removing file after last close.\n");
             /// If file was removed before, the file is removed from disk too.
             Bitmap *freeMap = new Bitmap(NUM_SECTORS);
             freeMap->FetchFrom(freeMapFile);
