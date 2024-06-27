@@ -40,29 +40,16 @@ OpenFile::OpenFile(int sector, FileHeader *fhdr)
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
+    if(sectorhdr == -1) /// freeMapFile or directoryFile
+        delete hdr;
+
     #ifdef FILESYS
     hdr->DecrementOpenFilesNumber();
     if(hdr->OpenFilesNumber() == 0) { /// this is the last reference to the file in memory.
-        if(hdr->removed == true) { 
-            /// If file was removed before, the file is removed from disk too.
-            Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-            freeMap->FetchFrom(fileSystem->GetFreeMapFile());
-
-            hdr->Deallocate(freeMap);  // Remove data blocks.
-            freeMap->Clear(sectorhdr);      // Remove header block.
-
-            freeMap->WriteBack(fileSystem->GetFreeMapFile());  // Flush to disk.
-            delete freeMap;
-        } else {
-            hdr->WriteBack(sectorhdr);
-        }
-        openFileList->RemoveByKey(sectorhdr);
-        delete hdr;
-    } ///else -> there are process that still reference this file, so we do not remove data structure
+        fileSystem->Remove(nullptr, hdr, sectorhdr);
+    } ///else -> there are processes that still reference this file, so we do not remove data structure
     #endif
     
-    if(sectorhdr == -1) /// freeMapFile or directoryFile
-        delete hdr;
 
 }
 

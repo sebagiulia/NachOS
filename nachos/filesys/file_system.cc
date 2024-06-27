@@ -272,50 +272,70 @@ FileSystem::Open(const char *name)
 ///
 /// * `name` is the text name of the file to be removed.
 bool
-FileSystem::Remove(const char *name)
+FileSystem::Remove(const char *name, FileHeader *hdr, int sector)
 {
-    ASSERT(name != nullptr);
 
     lockFS->Acquire();
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    dir->FetchFrom(directoryFile);
-    int sector = dir->Find(name);
-    if (sector == -1) {
-       lockFS->Release();
-       delete dir;
-       return false;  // file not found
-    }
-
-    FileHeader *fileH = nullptr;
-    #ifdef FILESYS
-        if(openFileList->HasKey(sector)) { 
-            ///> If the file is still opened by other process we do not remove it from disk yet
-            ///> but we mark it with [removed] and remove its name from the directory.
-            fileH = openFileList->GetByKey(sector);
-            fileH->removed = true;
-            dir->Remove(name);
-            dir->WriteBack(directoryFile);    // Flush to disk.   
+    if(hdr == nullptr) { ///> Remove called from FileSystem  
+        ASSERT(name != nullptr);
+        Directory *dir = new Directory(NUM_DIR_ENTRIES);
+        dir->FetchFrom(directoryFile);
+        int sector = dir->Find(name);
+        if (sector == -1) {
+           lockFS->Release();
+           delete dir;
+           return false;  // file not found
         }
+
+        FileHeader *fileH = nullptr;
+        #ifdef FILESYS
+            if(openFileList->HasKey(sector)) { 
+                ///> If the file is still opened by other process we do not remove it from disk yet
+                ///> but we mark it with [removed] and remove its name from the directory.
+                fileH = openFileList->GetByKey(sector);
+                fileH->removed = true;
+                dir->Remove(name);
+                dir->WriteBack(directoryFile);    // Flush to disk.   
+            }
+        #endif
+
+        if(fileH == nullptr) { // File no opened, we remove from disk and directory
+            fileH = new FileHeader;
+            fileH->FetchFrom(sector);
+
+            Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+            freeMap->FetchFrom(freeMapFile);
+
+            dir->Remove(name);
+            fileH->Deallocate(freeMap);  // Remove data blocks.
+            freeMap->Clear(sector);      // Remove header block.
+
+            dir->WriteBack(directoryFile);    // Flush to disk.
+            freeMap->WriteBack(freeMapFile);  // Flush to disk.
+            delete fileH;
+            delete freeMap;
+        }
+        delete dir;
+    } else { ///> Remove called from ~OpenFile 
+    #ifdef FILESYS
+        if(hdr->removed == true) { 
+            /// If file was removed before, the file is removed from disk too.
+            Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+            freeMap->FetchFrom(freeMapFile);
+
+            hdr->Deallocate(freeMap);  // Remove data blocks.
+            freeMap->Clear(sector);      // Remove header block.
+
+            freeMap->WriteBack(freeMapFile);  // Flush to disk.
+            delete freeMap;
+        } else {
+            hdr->WriteBack(sector);
+        }
+        openFileList->RemoveByKey(sector);
+        delete hdr;
     #endif
-
-    if(fileH == nullptr) { // File no opened, we remove from disk and directory
-        fileH = new FileHeader;
-        fileH->FetchFrom(sector);
-
-        Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-        freeMap->FetchFrom(freeMapFile);
-
-        dir->Remove(name);
-        fileH->Deallocate(freeMap);  // Remove data blocks.
-        freeMap->Clear(sector);      // Remove header block.
-
-        dir->WriteBack(directoryFile);    // Flush to disk.
-        freeMap->WriteBack(freeMapFile);  // Flush to disk.
-        delete fileH;
-        delete freeMap;
     }
     lockFS->Release();
-    delete dir;
     return true;
 
 }

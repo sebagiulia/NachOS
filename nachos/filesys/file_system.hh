@@ -124,7 +124,7 @@ public:
     OpenFile *Open(const char *name);
 
     /// Delete a file (UNIX `unlink`).
-    bool Remove(const char *name);
+    bool Remove(const char *name, FileHeader *hdr = nullptr, int sector=-1);
 
     /// List all the files in the file system.
     void List();
