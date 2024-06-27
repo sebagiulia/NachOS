@@ -272,7 +272,7 @@ FileSystem::Open(const char *name)
 ///
 /// * `name` is the text name of the file to be removed.
 bool
-FileSystem::Remove(const char *name, FileHeader *hdr, int sector)
+FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
 {
 
     lockFS->Acquire();
@@ -324,14 +324,14 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int sector)
             freeMap->FetchFrom(freeMapFile);
 
             hdr->Deallocate(freeMap);  // Remove data blocks.
-            freeMap->Clear(sector);      // Remove header block.
+            freeMap->Clear(hsector);      // Remove header block.
 
             freeMap->WriteBack(freeMapFile);  // Flush to disk.
             delete freeMap;
         } else {
-            hdr->WriteBack(sector);
+            hdr->WriteBack(hsector);
         }
-        openFileList->RemoveByKey(sector);
+        openFileList->RemoveByKey(hsector);
         delete hdr;
     #endif
     }
