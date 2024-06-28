@@ -37,10 +37,16 @@ public:
 
     /// Initialize a file header, including allocating space on disk for the
     /// file data.
-    bool Allocate(Bitmap *bitMap, unsigned fileSize);
+    bool Allocate(Bitmap *bitMap, unsigned fileSize, unsigned numDirect = NUM_DIRECT);
+
+    /// Initialize a doubly-indiretion header and its headers inside it.
+    void AllocateExtraHeaders(Bitmap *bitMap, unsigned numHeaders, unsigned restSize);
 
     /// De-allocate this file's data blocks.
     void Deallocate(Bitmap *bitMap);
+
+    ///> Deallocate files that only have direct data blocks.
+    void DeallocateDirect(Bitmap *bitMap);
 
     /// Initialize file header from disk.
     void FetchFrom(unsigned sectorNumber);
@@ -72,6 +78,7 @@ public:
 private:
     RawFileHeader raw;
     Lock *hdrLock; ///> Only one process can update [raw] at a time 
+    unsigned numberOpenFiles;
 };
 
 
