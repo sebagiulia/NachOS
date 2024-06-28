@@ -352,9 +352,10 @@ void
 FileSystem::List()
 {
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-
+    lockFS->Acquire();
     dir->FetchFrom(directoryFile);
     dir->List();
+    lockFS->Release();
     delete dir;
 }
 
@@ -482,6 +483,7 @@ CheckDirectory(const RawDirectory *rd, Bitmap *shadowMap)
 bool
 FileSystem::Check()
 {
+    lockFS->Acquire();
     DEBUG('f', "Performing filesystem check\n");
     bool error = false;
 
@@ -530,6 +532,7 @@ FileSystem::Check()
     DEBUG('f', error ? "Filesystem check failed.\n"
                      : "Filesystem check succeeded.\n");
 
+    lockFS->Release();
     return !error;
 }
 
@@ -547,6 +550,7 @@ FileSystem::Print()
     Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
     Directory  *dir     = new Directory(NUM_DIR_ENTRIES);
 
+    lockFS->Acquire();
     printf("--------------------------------\n");
     bitH->FetchFrom(FREE_MAP_SECTOR);
     bitH->Print("Bitmap");
@@ -563,6 +567,7 @@ FileSystem::Print()
     dir->FetchFrom(directoryFile);
     dir->Print();
     printf("--------------------------------\n");
+    lockFS->Release();
 
     delete bitH;
     delete dirH;
