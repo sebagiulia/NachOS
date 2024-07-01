@@ -41,8 +41,8 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
 {
     ASSERT(freeMap != nullptr);
     ASSERT(maxDirectBlocks <= sizeof(RawFileHeader) - 2); ///> dataSectors size should be greater or equal.
-                                                    ///> If it is equal there isn't space for 
-                                                    ///> doubly-indirection sector. 
+                                                          ///> If it is equal there isn't space for 
+                                                          ///> doubly-indirection sector. 
 
     if (fileSize > MAX_FILE_SIZE) {
         return false;
@@ -51,7 +51,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
     ///> Initialize class variables.
     removed = false;
     hdrLock = new Lock("File header lock");
-    numberOpenFiles = 0;
+    processesReferencing = 0;
     raw.numBytes = fileSize;
     raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
 
@@ -60,11 +60,11 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
     unsigned doublyHeader = 0;
 
     if(raw.numSectors > maxDirectBlocks) { ///> Doubly-indirection block needed
-        DEBUG('w', "Doubly-indirection block needed for size %u\n", fileSize);
+        DEBUG('h', "Doubly-indirection block needed for size %u\n", fileSize);
         numExtraHeaders = DivRoundUp(raw.numSectors - maxDirectBlocks,maxDirectBlocks+1); ///> Count number of header sectors 
                                                                                           ///> inside doubly indirection header.
         if(numExtraHeaders > maxDirectBlocks) { ///> Need more doubly-indirection headers.
-            DEBUG('w', "One doubly-indirection not enough for size %u\n", fileSize);
+            DEBUG('h', "One doubly-indirection not enough for size %u\n", fileSize);
             return false;
         }                                             
         numDirectBlocks = maxDirectBlocks;
@@ -102,7 +102,7 @@ FileHeader::AllocateExtraHeaders(Bitmap *freeMap, unsigned numExtraHeaders, unsi
     ///> Initialize every class variable.
     removed = false;
     hdrLock = new Lock("File header lock");
-    numberOpenFiles = 0;
+    processesReferencing = 0;
     raw.numBytes = restSize;
     raw.numSectors = numExtraHeaders;
     
@@ -131,7 +131,7 @@ void
 FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
-    DEBUG('w', "Deallocating file\n");
+    DEBUG('h', "Deallocating file\n");
     for (unsigned i = 0; i < raw.numSectors; i++) {
         if(i == NUM_DIRECT) break;
         ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
@@ -171,7 +171,7 @@ FileHeader::FetchFrom(unsigned sector)
 {
     synchDisk->ReadSector(sector, (char *) &raw);
     removed = false;
-    numberOpenFiles = 0;
+    processesReferencing = 0;
     hdrLock = new Lock("File header lock");
 }
 
@@ -181,10 +181,8 @@ FileHeader::FetchFrom(unsigned sector)
 void
 FileHeader::WriteBack(unsigned sector)
 {
-    hdrLock->Acquire();
     synchDisk->WriteSector(sector, (char *) &raw);
-    hdrLock->Release();
-    delete hdrLock;
+    ///>delete hdrLock;
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -193,25 +191,35 @@ FileHeader::WriteBack(unsigned sector)
 /// is stored).
 ///
 /// * `offset` is the location within the file of the byte in question.
-unsigned
+int
 FileHeader::ByteToSector(unsigned offset)
 {
-    unsigned sectorNumber = offset / SECTOR_SIZE;
 
+    unsigned sectorNumber = offset / SECTOR_SIZE;
+    bool sectorExists = true;
+
+    if(sectorNumber + 1  > raw.numSectors) {
+    ///> Not enough space, try to add a new sector
+    ///> to the file
+        sectorExists = AddSector();
+    }
+    if(!sectorExists) ///> No available new sectors
+        return -1;
+    
     if(sectorNumber >= NUM_DIRECT) { ///> Sector in doubly-indirection header
         sectorNumber -= (NUM_DIRECT - 1);
-        unsigned offsetInDoublyHeader = DivRoundUp(sectorNumber,NUM_DIRECT+1) - 1; ///> Sector where the header needed is located 
-        unsigned offsetInHeaderNeeded = sectorNumber - offsetInDoublyHeader*(NUM_DIRECT+1) - 1; ///> Sector in header needed 
+        unsigned offsetInDoublyIndHeader = DivRoundUp(sectorNumber,NUM_DIRECT+1) - 1; ///> Sector where the header needed is located 
+        unsigned offsetInHeaderNeeded = sectorNumber - offsetInDoublyIndHeader*(NUM_DIRECT+1) - 1; ///> Sector in header needed 
                                                                                                 ///> where the data sector is located
         
         ///> Here, we extract the diferent sectors along the path of headers until get the
         ///> sector needed.
         unsigned doublyHeaderSector = raw.dataSectors[NUM_DIRECT];
-        hdrLock->Acquire();
+        TakeLock();
         FileHeader *doublyHeader = new FileHeader;
         doublyHeader->FetchFrom(doublyHeaderSector);
         
-        unsigned sectorOfHeaderNeeded = doublyHeader->GetRaw()->dataSectors[offsetInDoublyHeader];
+        unsigned sectorOfHeaderNeeded = doublyHeader->GetRaw()->dataSectors[offsetInDoublyIndHeader];
         
         doublyHeader->WriteBack(doublyHeaderSector);
         delete doublyHeader;
@@ -223,7 +231,7 @@ FileHeader::ByteToSector(unsigned offset)
         
         headerNeeded->WriteBack(sectorOfHeaderNeeded);
         delete headerNeeded;
-        hdrLock->Release();
+        ReleaseLock();
         
         return dataSector;
     } else {
@@ -263,7 +271,7 @@ FileHeader::Print(const char *title)
 
     if(raw.numSectors > NUM_DIRECT) {
         FileHeader *sh = new FileHeader;
-        hdrLock->Acquire();
+        TakeLock();
         sh->FetchFrom(raw.dataSectors[NUM_DIRECT]);
         unsigned numHeaders = sh->GetRaw()->numSectors;
         for(unsigned i = 0; i < numHeaders; i++){
@@ -273,7 +281,7 @@ FileHeader::Print(const char *title)
                 printf("%u ", h->GetRaw()->dataSectors[j]);
             delete h;
         }
-        hdrLock->Release();
+        ReleaseLock();
         delete sh;         
     }
     
@@ -293,7 +301,7 @@ FileHeader::Print(const char *title)
     }
 
     if(raw.numSectors > NUM_DIRECT) {
-        hdrLock->Acquire();
+        TakeLock();
         FileHeader *sh = new FileHeader;
         sh->FetchFrom(raw.dataSectors[NUM_DIRECT]);
         unsigned numHeaders = sh->GetRaw()->numSectors;
@@ -313,7 +321,7 @@ FileHeader::Print(const char *title)
             }
             delete h;
         }
-        hdrLock->Release();
+        ReleaseLock();
         delete sh;
     }
 
@@ -326,22 +334,126 @@ FileHeader::GetRaw() const
     return &raw;
 }
 
+
+bool
+FileHeader::AddSector() {
+    if(raw.numSectors + 1 > MAX_FILE_SIZE) ///> No sector available 
+        return false; 
+    
+    fileSystem->TakeLock();
+    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+    freeMap->FetchFrom(fileSystem->GetFreeMapFile());
+    unsigned clear = freeMap->CountClear();
+
+    if(raw.numSectors < NUM_DIRECT && clear >= 1) { ///> Create new sector in a direct pointer of file header
+        int newSector = freeMap->Find();
+        DEBUG('f', "Adding sector %u to the file\n", newSector);
+        AppendDataSector(newSector);
+    } else if (raw.numSectors == NUM_DIRECT && clear >= 3) {
+        /// Necessary news doubly-indirection sector, indirect sector and the data sector
+        unsigned doubIndirectSector = freeMap->Find();
+
+        FileHeader *doubIndSectHeader = new FileHeader;
+        doubIndSectHeader->AllocateExtraHeaders(freeMap, 1, SECTOR_SIZE);
+        doubIndSectHeader->WriteBack(doubIndirectSector);
+        AppendDataSector(doubIndirectSector);
+        delete doubIndSectHeader;
+    } else if (raw.numSectors > NUM_DIRECT) { ///> Doubly-indirection block already in header
+        
+        if((raw.numSectors - NUM_DIRECT) % (NUM_DIRECT + 1) == 0) { ///> Need a new indirect sector and data sector
+            unsigned doubIndirectSector = raw.dataSectors[NUM_DIRECT];
+            FileHeader *doubIndSectHeader = new FileHeader;
+            doubIndSectHeader->FetchFrom(doubIndirectSector);
+
+            if(doubIndSectHeader->GetRaw()->numSectors == NUM_DIRECT + 1 && clear < 2) { 
+                ReleaseLock();
+                fileSystem->ReleaseLock();
+                delete doubIndSectHeader;
+                delete freeMap;
+                return false; ///> No available sectors
+            }
+
+            
+            unsigned indHeaderSector = freeMap->Find(); ///> indirect header
+            FileHeader *indHeader = new FileHeader;
+            indHeader->Allocate(freeMap, SECTOR_SIZE); 
+            indHeader->WriteBack(indHeaderSector);
+            delete indHeader;
+
+            doubIndSectHeader->AppendDataSector(indHeaderSector);
+            doubIndSectHeader->IncrementNumSectors();
+            doubIndSectHeader->WriteBack(doubIndirectSector);
+            delete doubIndSectHeader;
+        } else if(clear >= 1) { ///> New data sector in the last header of the doubly-indirection header
+            unsigned doubIndirectSector = raw.dataSectors[NUM_DIRECT];
+            FileHeader *doubIndSectHeader = new FileHeader;
+            doubIndSectHeader->FetchFrom(doubIndirectSector);
+            unsigned numSectors = doubIndSectHeader->GetRaw()->numSectors;
+            unsigned indHeaderSect = doubIndSectHeader->GetRaw()->dataSectors[numSectors - 1];
+            delete doubIndSectHeader;
+
+            FileHeader *indHeader = new FileHeader;
+            indHeader->FetchFrom(indHeaderSect);
+            int newSector = freeMap->Find();
+            indHeader->AppendDataSector(newSector);
+            indHeader->IncrementNumBytes(SECTOR_SIZE);
+            indHeader->IncrementNumSectors();
+            indHeader->WriteBack(indHeaderSect);
+            delete indHeader;
+        }
+
+    } else { ///> No available sectors
+        ReleaseLock();
+        fileSystem->ReleaseLock();
+        delete freeMap;
+        return false;
+    }
+
+    IncrementNumSectors();
+    freeMap->WriteBack(fileSystem->GetFreeMapFile());
+    fileSystem->ReleaseLock();
+    return true; 
+}
+
 void
-FileHeader::IncrementOpenFilesNumber() {        
-    hdrLock->Acquire();
-    numberOpenFiles++;
-    hdrLock->Release();
+FileHeader::AppendDataSector(unsigned sector) { ///> Lock already taken
+    raw.dataSectors[raw.numSectors] = sector;
+}
+
+void
+FileHeader::IncrementProcessesRefNumber() { ///> Lock already taken   
+    processesReferencing++;
 
 }
 
 void
-FileHeader::DecrementOpenFilesNumber() {
-    hdrLock->Acquire();
-    numberOpenFiles--;
-    hdrLock->Release();
+FileHeader::DecrementProcessesRefNumber() {  ///> Lock already taken  
+    processesReferencing--;
 }
 
 unsigned
-FileHeader::OpenFilesNumber() {
-    return numberOpenFiles;
+FileHeader::ProcessesReferencing() {
+    return processesReferencing;
+}
+
+void
+FileHeader::IncrementNumBytes(unsigned numBytes) {
+    raw.numBytes += numBytes;
+}
+
+void
+FileHeader::IncrementNumSectors() {
+    raw.numSectors ++;
+}
+
+void
+FileHeader::TakeLock() {
+    if(!hdrLock->IsHeldByCurrentThread()) /// Prevent double Acquire
+        hdrLock->Acquire();
+}
+
+void
+FileHeader::ReleaseLock() {
+    if(hdrLock->IsHeldByCurrentThread()) /// Prevent double Release
+        hdrLock->Release();
 }

@@ -32,7 +32,7 @@ OpenFile::OpenFile(int sector, FileHeader *fhdr)
 
     } else { ///> file opened by some process
         hdr = fhdr;
-        hdr->IncrementOpenFilesNumber();
+        hdr->IncrementProcessesRefNumber();
         sectorhdr = sector;
     }
     seekPosition = 0;
@@ -45,8 +45,8 @@ OpenFile::~OpenFile()
         delete hdr;
 
     #ifdef FILESYS
-    hdr->DecrementOpenFilesNumber();
-    if(hdr->OpenFilesNumber() == 0) { /// this is the last reference to the file in memory.
+    hdr->DecrementProcessesRefNumber();
+    if(hdr->ProcessesReferencing() == 0) { /// this is the last reference to the file in memory.
         fileSystem->Remove(nullptr, hdr, sectorhdr);
     } ///else -> there are processes that still reference this file, so we do not remove data structure
     #endif
@@ -150,7 +150,10 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     buf = new char [numSectors * SECTOR_SIZE];
     for (unsigned i = firstSector; i <= lastSector; i++) {
         int sector = hdr->ByteToSector(i * SECTOR_SIZE);
-        if(sector == -1) return -1;
+        if(sector == -1) {
+            hdr->ReleaseLock();
+            return -1;
+        }
         synchDisk->ReadSector(sector,
                               &buf[(i - firstSector) * SECTOR_SIZE]);
     }
@@ -200,13 +203,8 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     memcpy(&buf[position - firstSector * SECTOR_SIZE], from, numBytes);
 
     // Write modified sectors back.
-    unsigned rest = numBytes;
-    unsigned size = SECTOR_SIZE;
     for (unsigned i = firstSector; i <= lastSector; i++) {
-        if(i == lastSector) size = rest;
-        rest -= SECTOR_SIZE;
-        int sector = hdr->ByteToSector(i * SECTOR_SIZE, size);
-        DEBUG('f', "Writing %u bytes on sector: %u\n",size, sector);
+        int sector = hdr->ByteToSector(i * SECTOR_SIZE);
         if(sector == -1) {
             hdr->ReleaseLock();
             return -1;

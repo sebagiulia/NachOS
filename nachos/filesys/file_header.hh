@@ -56,7 +56,7 @@ public:
 
     /// Convert a byte offset into the file to the disk sector containing the
     /// byte.
-    unsigned ByteToSector(unsigned offset);
+    int ByteToSector(unsigned offset);
 
     /// Return the length of the file in bytes
     unsigned FileLength() const;
@@ -70,15 +70,35 @@ public:
     /// system at a low level.
     const RawFileHeader *GetRaw() const;
 
-    void IncrementOpenFilesNumber();
-    void DecrementOpenFilesNumber();
-    unsigned OpenFilesNumber();
+    /// Operations to the references number
+    void IncrementProcessesRefNumber();
+    void DecrementProcessesRefNumber();
+    unsigned ProcessesReferencing();
+
+    /// Increment number of bytes of header
+    void IncrementNumBytes(unsigned numBytes);
+    
+    /// Increment number of sectors of header
+    void IncrementNumSectors();
+    
+    /// Make space and add a new data sector  
+    bool AddSector();
+    
+    /// Add data sector to the last position at header 
+    void AppendDataSector(unsigned sector);
+    
+    /// Acquire lock
+    void TakeLock();
+
+    /// Release lock 
+    void ReleaseLock();
 
     bool removed;
 private:
     RawFileHeader raw;
     Lock *hdrLock; ///> Only one process can update [raw] at a time 
-    unsigned numberOpenFiles;
+    unsigned processesReferencing; ///> Number of processes that reference
+                                   ///> this file header at the moment. 
 };
 
 
