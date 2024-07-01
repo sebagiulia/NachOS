@@ -52,11 +52,10 @@
 #include <string.h>
 
 
-/// Sectors containing the file headers for the bitmap of free sectors, and
-/// the directory of files.  These file headers are placed in well-known
+/// Sectors containing the file headers for the bitmap of free sectors
+/// These file header are placed in well-known
 /// sectors, so that they can be located on boot-up.
 static const unsigned FREE_MAP_SECTOR = 0;
-static const unsigned DIRECTORY_SECTOR = 1;
 
 /// Initialize the file system.  If `format == true`, the disk has nothing on
 /// it, and we need to initialize the disk to contain an empty directory, and
@@ -175,10 +174,9 @@ FileSystem::Create(const char *name, unsigned initialSize)
 
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
-    lockFS->Acquire();
+    TakeLock();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     dir->FetchFrom(directoryFile);
-
     bool success;
 
     if (dir->Find(name) != -1) {
@@ -193,6 +191,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
             DEBUG('f', "Can't allocate file header of %s\n", name);
             success = false;  // No free block for file header.
         } else if (!dir->Add(name, sector)) {
+
             DEBUG('f', "No space in directory file %s\n", name);
             success = false;  // No space in directory.
         } else {
@@ -201,9 +200,10 @@ FileSystem::Create(const char *name, unsigned initialSize)
               // Fails if no space on disk for data.
             if (success) {
                 // Everything worked, flush all changes back to disk.
+                DEBUG('f',"Header sector %u for file %s\n", sector, name);
                 h->WriteBack(sector);
-                dir->WriteBack(directoryFile);
                 freeMap->WriteBack(freeMapFile);
+                dir->WriteBack(directoryFile);
             } else {
                 DEBUG('f', "No space for file %s\n", name);
             }
@@ -211,7 +211,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
         }
         delete freeMap;
     }
-    lockFS->Release();
+    ReleaseLock();
     delete dir;
     return success;
 }
@@ -228,7 +228,7 @@ FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
 
-    lockFS->Acquire();
+    TakeLock();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     OpenFile  *openFile = nullptr;
 
@@ -256,7 +256,7 @@ FileSystem::Open(const char *name)
     } else {
         DEBUG('f', "File %s not found\n", name);
     }
-    lockFS->Release();
+    ReleaseLock();
     delete dir;
     return openFile;  // Return null if not found.
 }
@@ -277,14 +277,14 @@ bool
 FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
 {
 
-    lockFS->Acquire();
+    TakeLock();
     if(hdr == nullptr) { ///> Remove called from FileSystem  
         ASSERT(name != nullptr);
         Directory *dir = new Directory(NUM_DIR_ENTRIES);
         dir->FetchFrom(directoryFile);
         int sector = dir->Find(name);
         if (sector == -1) {
-           lockFS->Release();
+           ReleaseLock();
            delete dir;
            return false;  // file not found
         }
@@ -342,7 +342,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         delete hdr;
     #endif
     }
-    lockFS->Release();
+    ReleaseLock();
     return true;
 
 }
@@ -352,10 +352,10 @@ void
 FileSystem::List()
 {
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    lockFS->Acquire();
+    TakeLock();
     dir->FetchFrom(directoryFile);
     dir->List();
-    lockFS->Release();
+    ReleaseLock();
     delete dir;
 }
 
@@ -483,7 +483,7 @@ CheckDirectory(const RawDirectory *rd, Bitmap *shadowMap)
 bool
 FileSystem::Check()
 {
-    lockFS->Acquire();
+    TakeLock();
     DEBUG('f', "Performing filesystem check\n");
     bool error = false;
 
@@ -532,7 +532,7 @@ FileSystem::Check()
     DEBUG('f', error ? "Filesystem check failed.\n"
                      : "Filesystem check succeeded.\n");
 
-    lockFS->Release();
+    ReleaseLock();
     return !error;
 }
 
@@ -550,7 +550,7 @@ FileSystem::Print()
     Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
     Directory  *dir     = new Directory(NUM_DIR_ENTRIES);
 
-    lockFS->Acquire();
+    TakeLock();
     printf("--------------------------------\n");
     bitH->FetchFrom(FREE_MAP_SECTOR);
     bitH->Print("Bitmap");
@@ -567,7 +567,7 @@ FileSystem::Print()
     dir->FetchFrom(directoryFile);
     dir->Print();
     printf("--------------------------------\n");
-    lockFS->Release();
+    ReleaseLock();
 
     delete bitH;
     delete dirH;
@@ -583,4 +583,16 @@ FileSystem::GetFreeMapFile() {
 OpenFile *
 FileSystem::GetDirectoryFile() {
     return directoryFile;
+}
+
+void
+FileSystem::TakeLock() {
+    if(!lockFS->IsHeldByCurrentThread()) /// Prevent double acquire
+        lockFS->Acquire();
+}
+
+void
+FileSystem::ReleaseLock() { 
+    if(lockFS->IsHeldByCurrentThread()) /// Prevent double release
+        lockFS->Release();
 }

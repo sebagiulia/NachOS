@@ -99,9 +99,9 @@ public:
 /// supports extensible files, the directory size sets the maximum number of
 /// files that can be loaded onto the disk.
 static const unsigned FREE_MAP_FILE_SIZE = NUM_SECTORS / BITS_IN_BYTE;
-static const unsigned NUM_DIR_ENTRIES = 10;
+static const unsigned NUM_DIR_ENTRIES = 5;
 static const unsigned DIRECTORY_FILE_SIZE
-  = sizeof (DirectoryEntry) * NUM_DIR_ENTRIES;
+  = sizeof (DirectoryEntry) * NUM_DIR_ENTRIES + sizeof(unsigned);
 
 
 class Lock;
@@ -137,6 +137,12 @@ public:
 
     OpenFile *GetFreeMapFile();
     OpenFile *GetDirectoryFile();
+
+    /// Acquire lock
+    void TakeLock();
+
+    /// Release lock
+    void ReleaseLock();
 
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
