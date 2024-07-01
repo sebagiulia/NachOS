@@ -16,10 +16,15 @@
 int
 main(void)
 {
+    Create("test.txt");
     OpenFileId o = Open("test.txt");
-    putstr("Escribo Bye");
-    Write("Bye  ",5,o);
-    putstr("Escribí Bye");
+    for(int i = 0; i < 1000; i++) {
+        if(Write("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",50,o) == -1){ 
+            putstr("Fallo");
+        }
+    }
+    putstr("Salió");
     Close(o);
     return 0;
 }
+
