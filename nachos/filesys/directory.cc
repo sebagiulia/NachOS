@@ -24,6 +24,7 @@
 #include "directory_entry.hh"
 #include "file_header.hh"
 #include "lib/utility.hh"
+#include "threads/system.hh"
 
 #include <stdio.h>
 #include <string.h>
@@ -42,6 +43,7 @@ Directory::Directory(unsigned size)
     for (unsigned i = 0; i < raw.tableSize; i++) {
         raw.table[i].inUse = false;
     }
+    extraEntry = nullptr;
 }
 
 /// De-allocate directory data structure.
@@ -57,8 +59,13 @@ void
 Directory::FetchFrom(OpenFile *file)
 {
     ASSERT(file != nullptr);
+    file->ReadAt((char *) &raw.tableSize, sizeof(unsigned), 0);
+    
+    /// Maybe the raw.table is smaller than the disk version, we resize it.
+    delete raw.table;
+    raw.table = new DirectoryEntry [raw.tableSize];
     file->ReadAt((char *) raw.table,
-                 raw.tableSize * sizeof (DirectoryEntry), 0);
+                 raw.tableSize * sizeof (DirectoryEntry), sizeof(unsigned));
 }
 
 /// Write any modifications to the directory back to disk.
@@ -68,8 +75,22 @@ void
 Directory::WriteBack(OpenFile *file)
 {
     ASSERT(file != nullptr);
+    unsigned tz = raw.tableSize;
+    if(extraEntry != nullptr) raw.tableSize++; /// If there is another entry, update tableSize
+
+    file->WriteAt((char *) &raw.tableSize, sizeof(unsigned), 0);
     file->WriteAt((char *) raw.table,
-                  raw.tableSize * sizeof (DirectoryEntry), 0);
+                  tz * sizeof (DirectoryEntry), sizeof(unsigned));
+    
+    if(extraEntry != nullptr) { ///> Write the extra entry at the last position in the table in disk
+        file->WriteAt((char *)extraEntry, sizeof (DirectoryEntry),
+                    tz * sizeof (DirectoryEntry) + sizeof(unsigned));
+        delete extraEntry;
+        extraEntry = nullptr;
+        synchDisk->WriteSector(DIRECTORY_SECTOR,
+                                (char *) file->GetHeader()->GetRaw()); /// Write back the changes (numBytes) 
+                                                                       /// to the directoy header
+    }
 }
 
 /// Look up file name in directory, and return its location in the table of
@@ -130,7 +151,15 @@ Directory::Add(const char *name, int newSector)
             return true;
         }
     }
-    return false;  // no space.  Fix when we have extensible files.
+
+    ///> If there isn´t no more space, we store ir in the temporaly variable
+    ///> until the write back instruccion.
+    DEBUG('b', "Expanding directory for file %s\n", name);
+    extraEntry = new DirectoryEntry;
+    extraEntry->inUse = true;
+    extraEntry->sector = newSector;
+    strncpy(extraEntry->name, name, FILE_NAME_MAX_LEN);
+    return true;
 }
 
 /// Remove a file name from the directory.   Return true if successful;

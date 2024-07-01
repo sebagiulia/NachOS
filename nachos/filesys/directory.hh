@@ -18,6 +18,10 @@
 #include "raw_directory.hh"
 #include "open_file.hh"
 
+/// Sector containing the file header for the directory of files.
+/// These file headers are placed in well-known sectors, so that
+/// they can be located on boot-up.
+static const unsigned DIRECTORY_SECTOR = 1;
 
 /// The following class defines a UNIX-like “directory”.  Each entry in the
 /// directory describes a file, and where to find it on disk.
@@ -70,6 +74,7 @@ private:
     int FindIndex(const char *name);
 
     RawDirectory raw;
+    DirectoryEntry *extraEntry; ///> Used to store temporaly a directory entry
 };
 
 
