@@ -16,6 +16,7 @@
 #include "threads/system.hh"
 
 #include <string.h>
+#include <stdio.h>
 
 
 /// Open a Nachos file for reading and writing.  Bring the file header into
@@ -127,7 +128,7 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
 {
     ASSERT(into != nullptr);
     ASSERT(numBytes > 0);
-
+    hdr->TakeLock();
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     char *buf;
@@ -148,13 +149,16 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     // Read in all the full and partial sectors that we need.
     buf = new char [numSectors * SECTOR_SIZE];
     for (unsigned i = firstSector; i <= lastSector; i++) {
-        synchDisk->ReadSector(hdr->ByteToSector(i * SECTOR_SIZE),
+        int sector = hdr->ByteToSector(i * SECTOR_SIZE);
+        if(sector == -1) return -1;
+        synchDisk->ReadSector(sector,
                               &buf[(i - firstSector) * SECTOR_SIZE]);
     }
 
     // Copy the part we want.
     memcpy(into, &buf[position - firstSector * SECTOR_SIZE], numBytes);
     delete [] buf;
+    hdr->ReleaseLock();
     return numBytes;
 }
 
@@ -163,20 +167,14 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 {
     ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
-
+    hdr->TakeLock();
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
-
-    if (position >= fileLength) {
-        return 0;  // Check request.
-    }
-    if (position + numBytes > fileLength) {
-        numBytes = fileLength - position;
-    }
+    
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
-          numBytes, position, fileLength);
+          numBytes, position,fileLength);
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
     lastSector  = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);
@@ -184,27 +182,47 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 
     buf = new char [numSectors * SECTOR_SIZE];
 
+    ///> Only read until the last available sector at file
+    unsigned lastAux = hdr->GetRaw()->numSectors < lastSector ? hdr->GetRaw()->numSectors : lastSector;
     firstAligned = position == firstSector * SECTOR_SIZE;
-    lastAligned  = position + numBytes == (lastSector + 1) * SECTOR_SIZE;
+    lastAligned  = position + numBytes >= (lastAux + 1) * SECTOR_SIZE;
 
     // Read in first and last sector, if they are to be partially modified.
     if (!firstAligned) {
         ReadAt(buf, SECTOR_SIZE, firstSector * SECTOR_SIZE);
     }
-    if (!lastAligned && (firstSector != lastSector || firstAligned)) {
-        ReadAt(&buf[(lastSector - firstSector) * SECTOR_SIZE],
-               SECTOR_SIZE, lastSector * SECTOR_SIZE);
+    if (!lastAligned && (firstSector != lastAux || firstAligned)) {
+        ReadAt(&buf[(lastAux - firstSector) * SECTOR_SIZE],
+               SECTOR_SIZE, lastAux * SECTOR_SIZE);
     }
 
     // Copy in the bytes we want to change.
     memcpy(&buf[position - firstSector * SECTOR_SIZE], from, numBytes);
 
     // Write modified sectors back.
+    unsigned rest = numBytes;
+    unsigned size = SECTOR_SIZE;
     for (unsigned i = firstSector; i <= lastSector; i++) {
-        synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
+        if(i == lastSector) size = rest;
+        rest -= SECTOR_SIZE;
+        int sector = hdr->ByteToSector(i * SECTOR_SIZE, size);
+        DEBUG('f', "Writing %u bytes on sector: %u\n",size, sector);
+        if(sector == -1) {
+            hdr->ReleaseLock();
+            return -1;
+        }
+        synchDisk->WriteSector(sector,
                                &buf[(i - firstSector) * SECTOR_SIZE]);
     }
     delete [] buf;
+
+    ///> Update the file header if new sectors were added.
+    if(fileLength < position + numBytes) {
+        hdr->IncrementNumBytes(position + numBytes - fileLength);
+        if(sectorhdr != -1)
+            hdr->WriteBack(sectorhdr);
+    }
+    hdr->ReleaseLock();
     return numBytes;
 }
 
@@ -213,4 +231,9 @@ unsigned
 OpenFile::Length() const
 {
     return hdr->FileLength();
+}
+
+FileHeader *
+OpenFile::GetHeader() {
+    return hdr;
 }
