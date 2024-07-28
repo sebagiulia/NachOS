@@ -28,8 +28,8 @@
 
 #include <stdio.h>
 #include <string.h>
-
-
+#include <cstring>
+#include <cstdio>
 /// Initialize a directory; initially, the directory is completely empty.  If
 /// the disk is being formatted, an empty directory is all we need, but
 /// otherwise, we need to call FetchFrom in order to initialize it from disk.
@@ -42,6 +42,7 @@ Directory::Directory(unsigned size)
     raw.tableSize = size;
     for (unsigned i = 0; i < raw.tableSize; i++) {
         raw.table[i].inUse = false;
+        raw.table[i].isDirectory = false;
     }
     extraEntry = nullptr;
 }
@@ -98,13 +99,16 @@ Directory::WriteBack(OpenFile *file)
 ///
 /// * `name` is the file name to look up.
 int
-Directory::FindIndex(const char *name)
+Directory::FindIndex(const char *name, bool directory)
 {
     ASSERT(name != nullptr);
 
     for (unsigned i = 0; i < raw.tableSize; i++) {
+        if(raw.table[i].inUse){
+            DEBUG('v', "aca hay %s con directory %d \n", raw.table[i].name, raw.table[i].isDirectory);
+        }
         if (raw.table[i].inUse
-              && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN)) {
+              && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN) && raw.table[i].isDirectory == directory) {
             return i;
         }
     }
@@ -117,15 +121,52 @@ Directory::FindIndex(const char *name)
 ///
 /// * `name` is the file name to look up.
 int
-Directory::Find(const char *name)
-{
+Directory::Find(const char *name) // hola/pepe/hola.txt --> hola.Find(/pepe/hola.txt);
+{   
     ASSERT(name != nullptr);
-
-    int i = FindIndex(name);
-    if (i != -1) {
-        return raw.table[i].sector;
+    char *str = new char[strlen(name)]; 
+    char *path = new char[strlen(name)]; 
+    strcpy(str, name);
+    strcpy(path, name);
+    for(int i = 0; i < (int)strlen(str); i++){
+        if(str[i] == '/') {
+            str[i] = '\0';
+            break;
+            }
     }
-    return -1;
+    int i;
+    DEBUG('v', "Buscando %s largo %d\n", str, strlen(str));
+    if(strlen(str) == strlen(name)){
+        i = FindIndex(name, false);
+        if(i != -1) i = raw.table[i].sector;
+    }
+    else{
+        DEBUG('v', "Buscando directorio %s\n", str);
+        i = FindIndex(str, true);
+        if(i == -1){
+            DEBUG('v', "No encontre el directorio\n");
+            delete str;
+            delete path;
+            return -1;
+        }
+        int sector = raw.table[i].sector; 
+        FileHeader *hdr;
+        if(openFileList->HasKey(sector)) {
+            hdr = openFileList->GetByKey(sector);
+        } else {
+            hdr = new FileHeader;
+            hdr->FetchFrom(sector);
+            openFileList->AppendKey(hdr, sector);
+        }
+        OpenFile *dir = new OpenFile(sector, hdr);
+        Directory *d = new Directory(1);
+        d->FetchFrom(dir);
+        char *rest = &(path[strlen(str)+1]);
+        i = d->Find(rest);
+    }
+    delete str;
+    delete path;
+    return i;
 }
 
 /// Add a file into the directory.  Return true if successful; return false
@@ -135,17 +176,18 @@ Directory::Find(const char *name)
 /// * `name` is the name of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
 bool
-Directory::Add(const char *name, int newSector)
+Directory::Add(const char *name, int newSector, bool directory)
 {
     ASSERT(name != nullptr);
 
     if (FindIndex(name) != -1) {
         return false;
     }
-
+    //hola/pepe/hola.txt raiz.Add(hola,true) hola.Add(pepe, true) pepe.Add(hola.txt,false)
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if (!raw.table[i].inUse) {
             raw.table[i].inUse = true;
+            raw.table[i].isDirectory = directory;
             strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
             raw.table[i].sector = newSector;
             return true;

@@ -51,7 +51,7 @@ public:
     int Find(const char *name);
 
     /// Add a file name into the directory.
-    bool Add(const char *name, int newSector);
+    bool Add(const char *name, int newSector, bool directory = false);
 
     /// Remove a file from the directory.
     bool Remove(const char *name);
@@ -69,9 +69,11 @@ public:
     /// system at a low level.
     const RawDirectory *GetRaw() const;
 
-private:
     /// Find the index into the directory table corresponding to `name`.
-    int FindIndex(const char *name);
+    int FindIndex(const char *name, bool directory = false);
+
+
+private:
 
     RawDirectory raw;
     DirectoryEntry *extraEntry; ///> Used to store temporaly a directory entry

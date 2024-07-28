@@ -166,50 +166,92 @@ FileSystem::~FileSystem()
 /// * `name` is the name of file to be created.
 /// * `initialSize` is the size of file to be created.
 bool
-FileSystem::Create(const char *name, unsigned initialSize)
+FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
 {
-
+    //create(hola/pepe/hola.txt,0) -> create(pepe/hola.txt,0,hola) -> create(hola.txt,0,hola/pepe)
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
 
-    DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
+    DEBUG('v', "Creating file %s, size %u\n", name, initialSize);
 
     TakeLock();
+    OpenFile *d;
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    dir->FetchFrom(directoryFile);
-    bool success;
-
+    if(dirsector == -1){
+        dir->FetchFrom(directoryFile);
+        d = directoryFile;
+    }
+    else{
+        FileHeader *hdr;
+        if(openFileList->HasKey(dirsector)) {
+            hdr = openFileList->GetByKey(dirsector);
+        } else {
+            hdr = new FileHeader;
+            hdr->FetchFrom(dirsector);
+            openFileList->AppendKey(hdr, dirsector);
+        }
+        d = new OpenFile(dirsector, hdr);
+        dir->FetchFrom(d);
+    }
+    bool success = true;
     if (dir->Find(name) != -1) {
         DEBUG('f', "Can't create file %s, already in directory\n", name);
         success = false;  // File is already in directory.
     } else {
-        Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-        freeMap->FetchFrom(freeMapFile);
-        int sector = freeMap->Find();
-          // Find a sector to hold the file header.
-        if (sector == -1) {
-            DEBUG('f', "Can't allocate file header of %s\n", name);
-            success = false;  // No free block for file header.
-        } else if (!dir->Add(name, sector)) {
-
-            DEBUG('f', "No space in directory file %s\n", name);
-            success = false;  // No space in directory.
-        } else {
-            FileHeader *h = new FileHeader;
-            success = h->Allocate(freeMap, initialSize);
-              // Fails if no space on disk for data.
-            if (success) {
-                // Everything worked, flush all changes back to disk.
-                DEBUG('f',"Header sector %u for file %s\n", sector, name);
-                h->WriteBack(sector);
-                freeMap->WriteBack(freeMapFile);
-                dir->WriteBack(directoryFile);
-            } else {
-                DEBUG('f', "No space for file %s\n", name);
-            }
-            delete h;
+        char *str = new char[strlen(name)]; 
+        char *path = new char[strlen(name)]; 
+        strcpy(str, name);
+        strcpy(path, name);
+        for(int i = 0; i < (int)strlen(str); i++){
+            if(str[i] == '/') {
+                str[i] = '\0';
+                break;
+                }
         }
-        delete freeMap;
+        bool directory = strlen(name) != strlen(str);
+        int index = dir->FindIndex(str, directory);
+        int sector;
+        if(index == -1){
+            DEBUG('v', "Creando archivo %s con str %s\n",name,str);
+            Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+            freeMap->FetchFrom(freeMapFile);
+            sector = freeMap->Find();
+            // Find a sector to hold the file header.
+            if (sector == -1) {
+                DEBUG('f', "Can't allocate file header of %s\n", str);
+                success = false;  // No free block for file header.
+            } else if (!dir->Add(str, sector, directory)) {
+                DEBUG('v', "Already in directory %s\n", str);
+                success = false;  // No space in directory.
+            } else {
+                FileHeader *h = new FileHeader;
+                success = h->Allocate(freeMap, directory ? 0 : initialSize);
+                // Fails if no space on disk for data.
+                if (success) {
+                    // Everything worked, flush all changes back to disk.
+                    DEBUG('v',"Header sector %u for file %s\n", sector, str);
+                    h->WriteBack(sector);
+                    freeMap->WriteBack(freeMapFile);
+                    dir->WriteBack(d);
+                } else {
+                    DEBUG('v', "No space for file %s\n", str);
+                }
+                delete h;
+            }
+            delete freeMap;
+        }
+        else{
+            sector = (dir->GetRaw())->table[index].sector;
+            //DEBUG('v', "Alocando %s en %d con success %d y directory %d\n", str, sector);
+        }
+        if(success && (directory != 0)){
+           // DEBUG('v', "ENTRE\n");
+            char *rest = &(path[strlen(str)+1]);
+            DEBUG('v', "Alocando el resto %s en %d\n",rest,sector);
+            success = Create(rest, initialSize, sector);
+        }
+        delete path;
+        delete str;
     }
     ReleaseLock();
     delete dir;
