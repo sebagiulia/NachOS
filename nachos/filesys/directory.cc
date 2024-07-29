@@ -200,6 +200,7 @@ Directory::Add(const char *name, int newSector, bool directory)
     extraEntry = new DirectoryEntry;
     extraEntry->inUse = true;
     extraEntry->sector = newSector;
+    extraEntry->isDirectory = directory;
     strncpy(extraEntry->name, name, FILE_NAME_MAX_LEN);
     return true;
 }
