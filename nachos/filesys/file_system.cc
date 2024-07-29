@@ -391,15 +391,39 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
 
 /// List all the files in the file system directory.
 void
-FileSystem::List()
+FileSystem::List(char *name)
 {
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     TakeLock();
     dir->FetchFrom(directoryFile);
-    dir->List();
+    if(name == nullptr){
+        dir->List();
+    }
+    else{
+        int sector = dir->Find(name,true);
+        if(sector == -1){
+            printf("Directory %s doesn't exist.\n", name);
+        }
+        else{
+            FileHeader *hdr = nullptr;
+            if(openFileList->HasKey(sector)) {
+                hdr = openFileList->GetByKey(sector);
+        } else {
+            hdr = new FileHeader;
+            hdr->FetchFrom(sector);
+            openFileList->AppendKey(hdr, sector);
+            //Cuando se sacan las keys de la openFileList?
+        }
+        OpenFile *d = new OpenFile(sector, hdr);
+        dir->FetchFrom(d);
+        dir->List();
+        delete d;
+        }
+    }
     ReleaseLock();
     delete dir;
 }
+
 
 static bool
 AddToShadowBitmap(unsigned sector, Bitmap *map)

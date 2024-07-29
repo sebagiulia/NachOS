@@ -48,7 +48,7 @@ public:
     void WriteBack(OpenFile *file);
 
     /// Find the sector number of the `FileHeader` for file: `name`.
-    int Find(const char *name);
+    int Find(const char *name, bool directory = false);
 
     /// Add a file name into the directory.
     bool Add(const char *name, int newSector, bool directory = false);
@@ -71,7 +71,6 @@ public:
 
     /// Find the index into the directory table corresponding to `name`.
     int FindIndex(const char *name, bool directory = false);
-
 
 private:
 

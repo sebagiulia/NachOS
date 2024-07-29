@@ -121,7 +121,7 @@ Directory::FindIndex(const char *name, bool directory)
 ///
 /// * `name` is the file name to look up.
 int
-Directory::Find(const char *name) // hola/pepe/hola.txt --> hola.Find(/pepe/hola.txt);
+Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola.Find(/pepe/hola.txt);
 {   
     ASSERT(name != nullptr);
     char *str = new char[strlen(name)]; 
@@ -137,7 +137,7 @@ Directory::Find(const char *name) // hola/pepe/hola.txt --> hola.Find(/pepe/hola
     int i;
     DEBUG('v', "Buscando %s largo %d\n", str, strlen(str));
     if(strlen(str) == strlen(name)){
-        i = FindIndex(name, false);
+        i = FindIndex(name, directory);
         if(i != -1) i = raw.table[i].sector;
     }
     else{
@@ -162,7 +162,7 @@ Directory::Find(const char *name) // hola/pepe/hola.txt --> hola.Find(/pepe/hola
         Directory *d = new Directory(1);
         d->FetchFrom(dir);
         char *rest = &(path[strlen(str)+1]);
-        i = d->Find(rest);
+        i = d->Find(rest,directory);
     }
     delete str;
     delete path;

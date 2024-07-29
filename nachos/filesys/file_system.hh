@@ -127,7 +127,7 @@ public:
     bool Remove(const char *name, FileHeader *hdr = nullptr, int sector=-1);
 
     /// List all the files in the file system.
-    void List();
+    void List(char *name = nullptr);
 
     /// Check the filesystem.
     bool Check();
