@@ -5,6 +5,7 @@
 int
 main(void)
 {
+    putstr("HOLA!\n");
     int j = Create("Mundo");   
     if(j != -1 ) putstr("Success: Archivo Mundo creado por filesyst2.");
     else putstr("Error: No se pudo crear archivo Mundo.");

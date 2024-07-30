@@ -16,8 +16,8 @@
 int
 main(void)
 {
-    Create("test.txt");
-    OpenFileId o = Open("test.txt");
+    Create("pepe/hola/test.txt");
+    OpenFileId o = Open("pepe/hola/test.txt");
     for(int i = 0; i < 1000; i++) {
         if(Write("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",50,o) == -1){ 
             putstr("Fallo");

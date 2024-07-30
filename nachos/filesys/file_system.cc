@@ -194,7 +194,7 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
         dir->FetchFrom(d);
     }
     bool success = true;
-    if (dir->Find(name) != -1) {
+    if (dirsector == -1 && dir->Find(name) != -1) {
         DEBUG('f', "Can't create file %s, already in directory\n", name);
         success = false;  // File is already in directory.
     } else {
@@ -324,8 +324,37 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
     if(hdr == nullptr) { ///> Remove called from FileSystem  
         ASSERT(name != nullptr);
         Directory *dir = new Directory(NUM_DIR_ENTRIES);
+        char *path = new char[strlen(name)];
+        strcpy(path, name);
+        int k;
+        for(k = (int)strlen(path) - 1; k >= 0; k--){
+            if(path[k] == '/'){
+                path[k] = '\0';
+                break;
+            }
+        }
         dir->FetchFrom(directoryFile);
-        int sector = dir->Find(name);
+        OpenFile *d = directoryFile;
+        if(k >= 0){ //hay barras
+            int headersector = dir->Find(path, true);
+            if (headersector == -1) {
+                ReleaseLock();
+                delete dir;
+                return false;  // file not found
+            }
+            FileHeader *hdr1;
+            if(openFileList->HasKey(headersector)) {
+                hdr1 = openFileList->GetByKey(headersector);
+            } else {
+                hdr1 = new FileHeader;
+                hdr1->FetchFrom(headersector);
+                openFileList->AppendKey(hdr, headersector);
+            }
+            d = new OpenFile(headersector, hdr);
+            dir->FetchFrom(d);
+            path = &(path[strlen(path)+1]);
+        }
+        int sector = dir->Find(path);
         if (sector == -1) {
            ReleaseLock();
            delete dir;
@@ -341,8 +370,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
                             "other processes, removing from directory.\n", currentThread->GetName(), name);
                 fileH = openFileList->GetByKey(sector);
                 fileH->removed = true;
-                dir->Remove(name);
-                dir->WriteBack(directoryFile);    // Flush to disk.   
+                dir->Remove(path);
+                dir->WriteBack(d);    // Flush to disk.   
             }
         #endif
 
@@ -355,15 +384,18 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
             Bitmap *freeMap = new Bitmap(NUM_SECTORS);
             freeMap->FetchFrom(freeMapFile);
 
-            dir->Remove(name);
+            dir->Remove(path);
+            DEBUG('r',"borrando path %s\n", path);
             fileH->Deallocate(freeMap);  // Remove data blocks.
             freeMap->Clear(sector);      // Remove header block.
 
-            dir->WriteBack(directoryFile);    // Flush to disk.
+            dir->WriteBack(d);    // Flush to disk.
             freeMap->WriteBack(freeMapFile);  // Flush to disk.
             delete fileH;
             delete freeMap;
         }
+        if(k >= 0) delete d;
+        //delete path;
         delete dir;
     } else { ///> Remove called from ~OpenFile 
     #ifdef FILESYS
@@ -413,7 +445,6 @@ FileSystem::List(char *name)
             hdr = new FileHeader;
             hdr->FetchFrom(sector);
             openFileList->AppendKey(hdr, sector);
-            //Cuando se sacan las keys de la openFileList?
         }
         OpenFile *d = new OpenFile(sector, hdr);
         dir->FetchFrom(d);

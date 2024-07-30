@@ -134,6 +134,7 @@ FileHeader::Deallocate(Bitmap *freeMap)
     DEBUG('h', "Deallocating file\n");
     for (unsigned i = 0; i < raw.numSectors; i++) {
         if(i == NUM_DIRECT) break;
+        DEBUG('r', "Testing bit %d\n", raw.dataSectors[i]);
         ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
         freeMap->Clear(raw.dataSectors[i]);
     }
