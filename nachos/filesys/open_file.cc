@@ -33,6 +33,7 @@ OpenFile::OpenFile(int sector, FileHeader *fhdr)
     } else { ///> file opened by some process
         hdr = fhdr;
         hdr->IncrementProcessesRefNumber();
+        hdr->WriteBack(sector);
         sectorhdr = sector;
     }
     seekPosition = 0;
@@ -81,7 +82,6 @@ OpenFile::Read(char *into, unsigned numBytes)
 {
     ASSERT(into != nullptr);
     ASSERT(numBytes > 0);
-
     int result = ReadAt(into, numBytes, seekPosition);
     seekPosition += result;
     return result;
@@ -134,6 +134,7 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     char *buf;
 
     if (position >= fileLength) {
+       // DEBUG('e', "position %d, fileLength %d \n", position, fileLength);
         return 0;  // Check request.
     }
     if (position + numBytes > fileLength) {
