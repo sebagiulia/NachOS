@@ -255,6 +255,7 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
     }
     ReleaseLock();
     delete dir;
+    if(dirsector != -1) delete d;
     return success;
 }
 

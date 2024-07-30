@@ -163,6 +163,8 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
         d->FetchFrom(dir);
         char *rest = &(path[strlen(str)+1]);
         i = d->Find(rest,directory);
+        delete d;
+        delete dir;
     }
     delete str;
     delete path;
