@@ -202,7 +202,7 @@ SyscallHandler(ExceptionType _et)
 
           int fid = currentThread->openFilesTable->Add(openFile);
           if (fid == -1) {
-              DEBUG('e', "Error: failed to add open file `%s` to the open files table.\n", filename);
+              DEBUG('u', "Error: failed to add open file `%s` to the open files table.\n", filename);
               delete openFile;
               DEBUG('e', "Closed file %u.\n", filename);
               machine->WriteRegister(2, -1);  // Return error code.

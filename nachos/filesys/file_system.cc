@@ -287,12 +287,14 @@ FileSystem::Open(const char *name)
         if(openFileList->HasKey(sector)) {
             hdr = openFileList->GetByKey(sector);
         } else {
+            DEBUG('u',"no hay key para archivo %s con sector %d\n", name, sector);
             ///> If the file wasn´t opened, its file header
             ///> is added to a shared list and can be found there 
             ///> by its sector number at the disk .
             hdr = new FileHeader;
             hdr->FetchFrom(sector);
             openFileList->AppendKey(hdr, sector);
+            //ASSERT(openFileList->HasKey(sector));
         }
         #endif
         openFile = new OpenFile(sector, hdr);  // `name` was found in directory.
@@ -346,11 +348,12 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
             if(openFileList->HasKey(headersector)) {
                 hdr1 = openFileList->GetByKey(headersector);
             } else {
+                DEBUG('u',"no esta el sector %d para header de %s con path %s\n", headersector, name, path);
                 hdr1 = new FileHeader;
                 hdr1->FetchFrom(headersector);
-                openFileList->AppendKey(hdr, headersector);
+                openFileList->AppendKey(hdr1, headersector);
             }
-            d = new OpenFile(headersector, hdr);
+            d = new OpenFile(headersector, hdr1);
             dir->FetchFrom(d);
             path = &(path[strlen(path)+1]);
         }

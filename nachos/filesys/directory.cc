@@ -105,7 +105,7 @@ Directory::FindIndex(const char *name, bool directory)
 
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if(raw.table[i].inUse){
-            DEBUG('v', "aca hay %s con directory %d \n", raw.table[i].name, raw.table[i].isDirectory);
+            DEBUG('v', "aca hay %s con sector %d \n", raw.table[i].name, raw.table[i].sector);
         }
         if (raw.table[i].inUse
               && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN) && raw.table[i].isDirectory == directory) {

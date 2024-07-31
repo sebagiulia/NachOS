@@ -336,7 +336,7 @@ void
 List<Item>::AppendKey(Item item, int key)
 {
     ListNode *element = new ListNode(item, key);
-
+    DEBUG('u',"agregando %d a list\n", key);
     if (IsEmpty()) {
         first = element;
         last = element;
@@ -350,8 +350,9 @@ template <class Item>
 bool
 List<Item>::HasKey(int key)
 {
-
+    DEBUG('u', "Buscando key %d\n", key);
     for (ListNode *ptr = first; ptr != nullptr; ptr = ptr->next) {
+        DEBUG('u', "Aca hay key %d\n", ptr->key);
         if (key == ptr->key) {
             return true;
         }
@@ -371,11 +372,13 @@ List<Item>::GetByKey(int key)
     }
     return Item();
 }
-
 template <class Item>
+
+/*
 void
 List<Item>::RemoveByKey(int key)
 {
+    DEBUG('u', "Sacando key %d\n", key);
     if(IsEmpty()) return;
     if(first->key == key) {
         if(first == last) {
@@ -390,6 +393,28 @@ List<Item>::RemoveByKey(int key)
     for (ListNode *ptr = first; ptr->next != nullptr; ptr = ptr->next) {
         if (key == ptr->next->key) {
             ptr->next = ptr->next->next;
+            return;
+        }
+    }
+}
+*/
+void
+List<Item>::RemoveByKey(int key)
+{
+    for (ListNode *ptr = first, *prev_ptr = nullptr;
+         ptr != nullptr;
+         prev_ptr = ptr, ptr = ptr->next) {
+        if (key == ptr->key) {
+            if (prev_ptr) {
+                prev_ptr->next = ptr->next;
+            }
+            if (first == ptr) {
+                first = ptr->next;
+            }
+            if (last == ptr) {
+                last = prev_ptr;
+            }
+            delete ptr;
             return;
         }
     }

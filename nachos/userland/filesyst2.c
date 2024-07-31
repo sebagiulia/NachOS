@@ -20,7 +20,7 @@ main(void)
     int r= -1;
     while(r < 1) {
         r = Read(buf, 100, hola);
-        putstr("leyendo a hola");
+       // putstr("leyendo a hola");
     }
     if(strlen(buf) == 99) {
         putstr("Success: Se leyo Hola correctamente:");
