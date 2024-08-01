@@ -135,7 +135,9 @@ Initialize(int argc, char **argv)
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
+    char *cd = nullptr;
 #endif
+
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
         argCount = 1;
@@ -173,8 +175,14 @@ Initialize(int argc, char **argv)
             format = true;
         }
 #endif
+#ifdef FILESYS
+        if (!strcmp(*argv, "-cd")) {
+            ASSERT(argc > 1);
+            cd = *(argv + 1);
+            argCount = 2;
+        }
     }
-
+#endif
     debug.SetFlags(debugFlags);  // Initialize `DEBUG` messages.
     debug.SetOpts(debugOpts);    // Set debugging behavior.
     stats = new Statistics;      // Collect statistics.
@@ -210,7 +218,7 @@ Initialize(int argc, char **argv)
 #endif
 
 #ifdef FILESYS_NEEDED
-    fileSystem = new FileSystem(format);
+    fileSystem = new FileSystem(format,cd);
 #endif
 
 }

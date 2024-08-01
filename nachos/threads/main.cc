@@ -170,8 +170,10 @@ main(int argc, char **argv)
         } else if (!strcmp(*argv, "-ls")) {  // List Nachos directory.
             if(argc == 1)
                 fileSystem->List();
-            else
+            else{
                 fileSystem->List(*(argv + 1));
+                argCount = 2;
+            }
             printf("\n");
         } else if (!strcmp(*argv, "-D")) {   // Print entire filesystem.
             fileSystem->Print();

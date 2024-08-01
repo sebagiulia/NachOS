@@ -66,7 +66,7 @@ static const unsigned FREE_MAP_SECTOR = 0;
 /// bitmap and the directory.
 ///
 /// * `format` -- should we initialize the disk?
-FileSystem::FileSystem(bool format)
+FileSystem::FileSystem(bool format, const char *name)
 {
     lockFS = new Lock("File System Lock");
     DEBUG('f', "Initializing the file system.\n");
@@ -114,22 +114,29 @@ FileSystem::FileSystem(bool format)
         DEBUG('f', "Writing bitmap and directory back to disk.\n");
         freeMap->WriteBack(freeMapFile);     // flush changes to disk
         dir->WriteBack(directoryFile);
-
         if (debug.IsEnabled('f')) {
             freeMap->Print();
             dir->Print();
-
             delete freeMap;
             delete dir;
             delete mapH;
             delete dirH;
         }
+        ASSERT(name == nullptr);
     } else {
         // If we are not formatting the disk, just open the files
         // representing the bitmap and directory; these are left open while
         // Nachos is running.
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
+        if(name != nullptr){
+            Directory *dir = new Directory(NUM_DIR_ENTRIES);
+            dir->FetchFrom(directoryFile);
+            int sector = dir->Find(name, true);
+            ASSERT(sector != -1);
+            delete directoryFile;
+            directoryFile = new OpenFile(sector);
+        }
     }
 }
 
