@@ -38,7 +38,7 @@ Scheduler::~Scheduler()
 {
     for(int i = 0; i < numberOfPriorities; i++)
     	delete readyMultiQueue[i];
-    delete readyMultiQueue;
+    delete [] readyMultiQueue;
     
 }
 

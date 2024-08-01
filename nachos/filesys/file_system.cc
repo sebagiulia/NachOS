@@ -130,12 +130,14 @@ FileSystem::FileSystem(bool format, const char *name)
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
         if(name != nullptr){
+            DEBUG('z', "cambio de directorio a %s\n", name);
             Directory *dir = new Directory(NUM_DIR_ENTRIES);
             dir->FetchFrom(directoryFile);
             int sector = dir->Find(name, true);
             ASSERT(sector != -1);
             delete directoryFile;
             directoryFile = new OpenFile(sector);
+            delete dir;
         }
     }
 }
@@ -205,8 +207,8 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
         DEBUG('f', "Can't create file %s, already in directory\n", name);
         success = false;  // File is already in directory.
     } else {
-        char *str = new char[strlen(name)]; 
-        char *path = new char[strlen(name)]; 
+        char *str = new char[strlen(name)+1]; 
+        char *path = new char[strlen(name)+1]; 
         strcpy(str, name);
         strcpy(path, name);
         for(int i = 0; i < (int)strlen(str); i++){
@@ -257,8 +259,8 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
             DEBUG('v', "Alocando el resto %s en %d\n",rest,sector);
             success = Create(rest, initialSize, sector);
         }
-        delete path;
-        delete str;
+        delete [] path;
+        delete [] str;
     }
     ReleaseLock();
     delete dir;
@@ -301,7 +303,7 @@ FileSystem::Open(const char *name)
             hdr = new FileHeader;
             hdr->FetchFrom(sector);
             openFileList->AppendKey(hdr, sector);
-            //ASSERT(openFileList->HasKey(sector));
+            ASSERT(openFileList->HasKey(sector));
         }
         #endif
         openFile = new OpenFile(sector, hdr);  // `name` was found in directory.
@@ -333,7 +335,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
     if(hdr == nullptr) { ///> Remove called from FileSystem  
         ASSERT(name != nullptr);
         Directory *dir = new Directory(NUM_DIR_ENTRIES);
-        char *path = new char[strlen(name)];
+        char *path = new char[strlen(name)+1];
         strcpy(path, name);
         int k;
         for(k = (int)strlen(path) - 1; k >= 0; k--){
@@ -359,6 +361,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
                 hdr1 = new FileHeader;
                 hdr1->FetchFrom(headersector);
                 openFileList->AppendKey(hdr1, headersector);
+                ASSERT(openFileList->HasKey(headersector));
             }
             d = new OpenFile(headersector, hdr1);
             dir->FetchFrom(d);

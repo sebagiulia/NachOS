@@ -56,7 +56,7 @@ Lock::Lock(const char *debugName)
 Lock::~Lock()
 {
     delete sem;
-    delete nombre_sem;
+    delete [] nombre_sem;
 }
 
 const char *

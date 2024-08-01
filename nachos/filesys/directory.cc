@@ -63,7 +63,7 @@ Directory::FetchFrom(OpenFile *file)
     file->ReadAt((char *) &raw.tableSize, sizeof(unsigned), 0);
     
     /// Maybe the raw.table is smaller than the disk version, we resize it.
-    delete raw.table;
+    delete [] raw.table;
     raw.table = new DirectoryEntry [raw.tableSize];
     file->ReadAt((char *) raw.table,
                  raw.tableSize * sizeof (DirectoryEntry), sizeof(unsigned));
@@ -102,7 +102,7 @@ int
 Directory::FindIndex(const char *name, bool directory)
 {
     ASSERT(name != nullptr);
-
+    ASSERT(strlen(name) != 0);
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if(raw.table[i].inUse){
             DEBUG('v', "aca hay %s con sector %d \n", raw.table[i].name, raw.table[i].sector);
@@ -124,8 +124,9 @@ int
 Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola.Find(/pepe/hola.txt);
 {   
     ASSERT(name != nullptr);
-    char *str = new char[strlen(name)]; 
-    char *path = new char[strlen(name)]; 
+    ASSERT(strlen(name) != 0);
+    char *str = new char[strlen(name) +1]; 
+    char *path = new char[strlen(name)+1]; 
     strcpy(str, name);
     strcpy(path, name);
     for(int i = 0; i < (int)strlen(str); i++){
@@ -145,8 +146,8 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
         i = FindIndex(str, true);
         if(i == -1){
             DEBUG('v', "No encontre el directorio\n");
-            delete str;
-            delete path;
+            delete [] str;
+            delete [] path;
             return -1;
         }
         int sector = raw.table[i].sector; 
@@ -166,8 +167,8 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
         delete d;
         delete dir;
     }
-    delete str;
-    delete path;
+    delete [] str;
+    delete [] path;
     return i;
 }
 

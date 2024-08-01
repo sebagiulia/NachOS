@@ -33,7 +33,6 @@ OpenFile::OpenFile(int sector, FileHeader *fhdr)
     } else { ///> file opened by some process
         hdr = fhdr;
         hdr->IncrementProcessesRefNumber();
-        //hdr->WriteBack(sector);
         sectorhdr = sector;
     }
     seekPosition = 0;
@@ -44,11 +43,12 @@ OpenFile::~OpenFile()
 {
     if(sectorhdr == -1) /// freeMapFile or directoryFile
         delete hdr;
-
-    #ifdef FILESYS
-    hdr->DecrementProcessesRefNumber();
-    if(hdr->ProcessesReferencing() == 0) { /// this is the last reference to the file in memory.
-        fileSystem->Remove(nullptr, hdr, sectorhdr);
+    else{
+        #ifdef FILESYS
+        hdr->DecrementProcessesRefNumber();
+        if(hdr->ProcessesReferencing() == 0) { /// this is the last reference to the file in memory.
+            fileSystem->Remove(nullptr, hdr, sectorhdr);
+        }
     }
      ///else -> there are processes that still reference this file, so we do not remove data structure
     #endif
@@ -135,7 +135,7 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     char *buf;
 
     if (position >= fileLength) {
-       // DEBUG('e', "position %d, fileLength %d \n", position, fileLength);
+        DEBUG('e', "position %d, fileLength %d \n", position, fileLength);
         return 0;  // Check request.
     }
     if (position + numBytes > fileLength) {

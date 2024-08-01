@@ -47,5 +47,7 @@ main(void)
     } else {
         putstr("Error: Error en la lectura");
     }
+    Close(hola);
+    Close(mundo);
     return 0;
 }

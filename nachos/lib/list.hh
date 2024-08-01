@@ -401,6 +401,7 @@ List<Item>::RemoveByKey(int key)
 void
 List<Item>::RemoveByKey(int key)
 {
+    DEBUG('u', "sacando key %d\n", key);
     for (ListNode *ptr = first, *prev_ptr = nullptr;
          ptr != nullptr;
          prev_ptr = ptr, ptr = ptr->next) {

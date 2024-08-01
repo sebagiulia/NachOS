@@ -35,7 +35,7 @@ Condition::Condition(const char *debugName, Lock *conditionLock)
 Condition::~Condition()
 {
     delete s;
-    delete nombre_sem;
+    delete [] nombre_sem;
 }
 
 const char *
