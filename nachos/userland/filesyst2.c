@@ -6,13 +6,13 @@ int
 main(void)
 {
     putstr("HOLA!\n");
-    int j = Create("Mundo");   
+    int j = Create("a/Mundo");   
     if(j != -1 ) putstr("Success: Archivo Mundo creado por filesyst2.");
     else putstr("Error: No se pudo crear archivo Mundo.");
     
-    OpenFileId hola = Open("Hola");
+    OpenFileId hola = Open("a/Hola");
     while(hola == -1)
-        hola = Open("Hola");
+        hola = Open("a/Hola");
     putstr("Success: Archivo Hola abierto por filesyst2");
     
     char buf[100], rc[5];
@@ -32,8 +32,9 @@ main(void)
         putstr(rc);
         return 0;
     }
-    Remove("Hola");
-    hola = Open("Hola");
+    Close(hola);
+    Remove("a/Hola");
+    hola = Open("a/Hola");
     if(hola == -1) putstr("Success: Se elimino el archivo del directorio con exito");
     else putstr("Error: Se abrio un archivo que esta previamente removido");
     Exit(0);
