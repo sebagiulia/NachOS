@@ -135,9 +135,10 @@ Initialize(int argc, char **argv)
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
+#endif
+#ifdef FILESYS
     char *cd = nullptr;
 #endif
-
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
         argCount = 1;
@@ -181,8 +182,8 @@ Initialize(int argc, char **argv)
             cd = *(argv + 1);
             argCount = 2;
         }
-    }
 #endif
+    }
     debug.SetFlags(debugFlags);  // Initialize `DEBUG` messages.
     debug.SetOpts(debugOpts);    // Set debugging behavior.
     stats = new Statistics;      // Collect statistics.
@@ -218,9 +219,12 @@ Initialize(int argc, char **argv)
 #endif
 
 #ifdef FILESYS_NEEDED
-    fileSystem = new FileSystem(format,cd);
+    fileSystem = new FileSystem(format);
 #endif
 
+#ifdef FILESYS
+    if(cd != nullptr) fileSystem->ChangeDirectory(cd);
+#endif
 }
 
 /// Nachos is halting.  De-allocate global data structures.

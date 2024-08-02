@@ -66,7 +66,7 @@ static const unsigned FREE_MAP_SECTOR = 0;
 /// bitmap and the directory.
 ///
 /// * `format` -- should we initialize the disk?
-FileSystem::FileSystem(bool format, const char *name)
+FileSystem::FileSystem(bool format)
 {
     lockFS = new Lock("File System Lock");
     DEBUG('f', "Initializing the file system.\n");
@@ -122,23 +122,13 @@ FileSystem::FileSystem(bool format, const char *name)
             delete mapH;
             delete dirH;
         }
-        ASSERT(name == nullptr);
     } else {
         // If we are not formatting the disk, just open the files
         // representing the bitmap and directory; these are left open while
         // Nachos is running.
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
-        if(name != nullptr){
-            DEBUG('z', "cambio de directorio a %s\n", name);
-            Directory *dir = new Directory(NUM_DIR_ENTRIES);
-            dir->FetchFrom(directoryFile);
-            int sector = dir->Find(name, true);
-            ASSERT(sector != -1);
-            delete directoryFile;
-            directoryFile = new OpenFile(sector);
-            delete dir;
-        }
+        
     }
 }
 
@@ -148,6 +138,20 @@ FileSystem::~FileSystem()
     delete directoryFile;
     delete lockFS;
 }
+
+void
+FileSystem::ChangeDirectory(const char *name){
+    ASSERT(name != nullptr);
+    DEBUG('z', "cambio de directorio a %s\n", name);
+    Directory *dir = new Directory(NUM_DIR_ENTRIES);
+    dir->FetchFrom(directoryFile);
+    int sector = dir->Find(name, true);
+    ASSERT(sector != -1);
+    delete directoryFile;
+    directoryFile = new OpenFile(sector);
+    delete dir;
+}
+
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
 /// Since we cannot increase the size of files dynamically, we have to give
@@ -330,7 +334,6 @@ FileSystem::Open(const char *name)
 bool
 FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
 {
-
     TakeLock();
     if(hdr == nullptr) { ///> Remove called from FileSystem  
         ASSERT(name != nullptr);
@@ -426,6 +429,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         } else {
             hdr->WriteBack(hsector);
         }
+        DEBUG('u', "Queriendo sacar sector %d\n",hsector);
+        ASSERT(openFileList->HasKey(hsector));
         openFileList->RemoveByKey(hsector);
         delete hdr;
     #endif

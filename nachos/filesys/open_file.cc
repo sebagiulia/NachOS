@@ -49,9 +49,10 @@ OpenFile::~OpenFile()
         if(hdr->ProcessesReferencing() == 0) { /// this is the last reference to the file in memory.
             fileSystem->Remove(nullptr, hdr, sectorhdr);
         }
+        #endif
     }
      ///else -> there are processes that still reference this file, so we do not remove data structure
-    #endif
+    
     
 
 }

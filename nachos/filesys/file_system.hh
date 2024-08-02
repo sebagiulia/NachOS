@@ -113,7 +113,7 @@ public:
     ///
     /// If `format`, there is nothing on the disk, so initialize the
     /// directory and the bitmap of free blocks.
-    FileSystem(bool format, const char *name);
+    FileSystem(bool format);
 
     ~FileSystem();
 
@@ -143,6 +143,8 @@ public:
 
     /// Release lock
     void ReleaseLock();
+
+    void ChangeDirectory(const char *name);
 
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a

@@ -56,8 +56,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
     raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
 
     unsigned numDirectBlocks = raw.numSectors;
-    unsigned numExtraHeaders = 0;
-    unsigned doublyHeader = 0;
+    unsigned numExtraHeaders = 0;    unsigned doublyHeader = 0;
 
     if(raw.numSectors > maxDirectBlocks) { ///> Doubly-indirection block needed
         DEBUG('h', "Doubly-indirection block needed for size %u\n", fileSize);
@@ -183,7 +182,7 @@ void
 FileHeader::WriteBack(unsigned sector)
 {
     synchDisk->WriteSector(sector, (char *) &raw);
-    ///>delete hdrLock;
+    //delete hdrLock;
 }
 
 /// Return which disk sector is storing a particular byte within the file.
