@@ -85,7 +85,7 @@ static void InitNewThread(void *args)
     char *swapFileName = new char[7];
     sprintf(swapFileName, "SWAP.%u", currentThread->sid);
     fileSystem->Create(swapFileName, currentThread->space->NumPages()*PAGE_SIZE);
-    delete swapFileName;
+    delete [] swapFileName;
   #endif
   currentThread->space->InitRegisters();
 	currentThread->space->RestoreState();
@@ -244,12 +244,13 @@ SyscallHandler(ExceptionType _et)
             break;
           }
 
-          char buffer[size];
+          char buffer[size+1];
           ReadBufferFromUser(bufferAddr, buffer, size);
-
+          buffer[size] = '\0';
           if (fid == CONSOLE_OUTPUT) {
+            DEBUG('v', "Escribiendo en consola size %d buffer %s\n", size, buffer);
             for(int i = 0; i < size; i++){
-              synchConsole->PutChar(buffer[i]);
+               synchConsole->PutChar(buffer[i]);
             }
             DEBUG('e', "`Write` done on synch_console `%u`.\n", fid);
             machine->WriteRegister(2, 0); // Return success code.
@@ -515,7 +516,6 @@ SyscallHandler(ExceptionType _et)
               DEBUG('e', "Thread %s Join to thread %s.\n", currentThread->GetName(), th->GetName());
               int exitstatus = 0;
               th->Join(&exitstatus);
-              DEBUG('e', "Thread %s finished with state: %d\n", th->GetName(), exitstatus);
               machine->WriteRegister(2, exitstatus);
             } else {
               DEBUG('e', "Invalid space id.\n");

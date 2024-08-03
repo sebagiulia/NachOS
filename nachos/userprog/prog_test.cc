@@ -40,7 +40,7 @@ StartProcess(const char *filename)
     char *swapFileName = new char[7];
     sprintf(swapFileName, "SWAP.%u", sid);
     fileSystem->Create(swapFileName, space->NumPages()*PAGE_SIZE);
-    delete swapFileName;
+    delete [] swapFileName;
     #endif
 
     //delete executable;

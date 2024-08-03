@@ -20,13 +20,13 @@ main(void)
     rc[4] = 0;
     SpaceId t1 = Exec("filesyst1");
     SpaceId t2 = Exec("filesyst2");
-    OpenFileId hola = Open("a/Hola");
+    OpenFileId hola = Open("Hola");
     while(hola == -1)
-        hola = Open("a/Hola");
+        hola = Open("Hola");
 
-    OpenFileId mundo = Open("a/Mundo");
+    OpenFileId mundo = Open("Mundo");
     while(mundo == -1)
-        mundo = Open("a/Mundo");
+        mundo = Open("Mundo");
     putstr("Success: Ambos archivos abiertos.");
     
     char *buf = "holaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholaholahol";

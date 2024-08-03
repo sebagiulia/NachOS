@@ -24,6 +24,7 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
         ASSERT(pruebas < 4);
         userAddress++;
         *outBuffer = (unsigned char) temp;
+        //DEBUG('v', "outBuffer=%c\n", *outBuffer);
     };
 }
 

@@ -72,14 +72,14 @@ Thread::~Thread()
     DEBUG('t', "Deleting thread \"%s\"\n", name);
  
     ASSERT(this != currentThread);
-    if (stack != nullptr) {
-        SystemDep::DeallocBoundedArray((char *) stack,
-                                       STACK_SIZE * sizeof *stack);
-    }
     #ifdef USER_PROGRAM
     delete openFilesTable;
     processesTable->Remove(sid);
     #endif
+    if (stack != nullptr) {
+        SystemDep::DeallocBoundedArray((char *) stack,
+                                       STACK_SIZE * sizeof *stack);
+    }
 }
 
 //The thread that calls this function will wait until this thread finishes.

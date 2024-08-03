@@ -34,9 +34,9 @@ Channel::~Channel()
     delete cond_read;
     delete cond_write;
     delete l;
-    delete nombre_read;
-    delete nombre_lock;
-    delete nombre_write;
+    delete [] nombre_read;
+    delete [] nombre_lock;
+    delete [] nombre_write;
 }
 
 void Channel::Receive(int *message)
