@@ -36,7 +36,7 @@ class Directory {
 public:
 
     /// Initialize an empty directory with space for `size` files.
-    Directory(unsigned size);
+    Directory(unsigned size, unsigned sector = DIRECTORY_SECTOR);
 
     /// De-allocate the directory.
     ~Directory();
@@ -72,6 +72,7 @@ public:
     /// Find the index into the directory table corresponding to `name`.
     int FindIndex(const char *name, bool directory = false);
 
+    unsigned sector;
 private:
 
     RawDirectory raw;

@@ -46,6 +46,9 @@ OpenFile::~OpenFile()
     else{
         #ifdef FILESYS
         hdr->DecrementProcessesRefNumber();
+        if(!openFileList->HasKey(sectorhdr)){
+            return;
+        }
         if(hdr->ProcessesReferencing() == 0) { /// this is the last reference to the file in memory.
             fileSystem->Remove(nullptr, hdr, sectorhdr);
         }
@@ -151,6 +154,8 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
 
     // Read in all the full and partial sectors that we need.
     buf = new char [numSectors * SECTOR_SIZE];
+    memset(buf, 0, numSectors * SECTOR_SIZE);
+    
     for (unsigned i = firstSector; i <= lastSector; i++) {
         int sector = hdr->ByteToSector(i * SECTOR_SIZE);
         if(sector == -1) {
@@ -187,6 +192,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     numSectors  = 1 + lastSector - firstSector;
 
     buf = new char [numSectors * SECTOR_SIZE];
+    memset(buf, 0, numSectors * SECTOR_SIZE);
 
     ///> Only read until the last available sector at file
     unsigned lastAux = hdr->GetRaw()->numSectors < lastSector ? hdr->GetRaw()->numSectors : lastSector;
@@ -212,6 +218,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
             hdr->ReleaseLock();
             return -1;
         }
+        // Verifica e inicializa cualquier parte del buffer que no haya sido llenada
         synchDisk->WriteSector(sector,
                                &buf[(i - firstSector) * SECTOR_SIZE]);
     }

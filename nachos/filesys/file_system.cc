@@ -188,14 +188,16 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
     DEBUG('v', "Creating file %s, size %u\n", name, initialSize);
 
     TakeLock();
-    OpenFile *d;
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
+    OpenFile *d = nullptr;
+    Directory *dir = nullptr;
     if(dirsector == -1){
+        dir = new Directory(NUM_DIR_ENTRIES);
         dir->FetchFrom(directoryFile);
         d = directoryFile;
     }
     else{
-        FileHeader *hdr;
+        dir = new Directory(NUM_DIR_ENTRIES, dirsector);
+        FileHeader *hdr = nullptr;
         if(openFileList->HasKey(dirsector)) {
             hdr = openFileList->GetByKey(dirsector);
         } else {
@@ -242,7 +244,18 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
                 // Fails if no space on disk for data.
                 if (success) {
                     // Everything worked, flush all changes back to disk.
-                    DEBUG('v',"Header sector %u for file %s\n", sector, str);
+
+                    // If the file is a directory, initialize it and store at disk 
+                    if(directory) {
+                        freeMap->WriteBack(freeMapFile);
+                        OpenFile *dfile = new OpenFile(sector, h);
+                        Directory *direct = new Directory(1, sector);
+                        direct->WriteBack(dfile);
+                        delete dfile;
+                        delete direct;
+                        freeMap->FetchFrom(freeMapFile);
+                    }
+
                     h->WriteBack(sector);
                     freeMap->WriteBack(freeMapFile);
                     dir->WriteBack(d);

@@ -35,16 +35,20 @@
 /// otherwise, we need to call FetchFrom in order to initialize it from disk.
 ///
 /// * `size` is the number of entries in the directory.
-Directory::Directory(unsigned size)
+Directory::Directory(unsigned size, unsigned sect)
 {
     ASSERT(size > 0);
     raw.table = new DirectoryEntry [size];
     raw.tableSize = size;
     for (unsigned i = 0; i < raw.tableSize; i++) {
         raw.table[i].inUse = false;
+        raw.table[i].sector = 0;
+        raw.table[i].sector = 0;
+        memset(raw.table[i].name, 0, FILE_NAME_MAX_LEN + 1);
         raw.table[i].isDirectory = false;
     }
     extraEntry = nullptr;
+    sector = sect;
 }
 
 /// De-allocate directory data structure.
@@ -65,6 +69,13 @@ Directory::FetchFrom(OpenFile *file)
     /// Maybe the raw.table is smaller than the disk version, we resize it.
     delete [] raw.table;
     raw.table = new DirectoryEntry [raw.tableSize];
+    for (unsigned i = 0; i < raw.tableSize; i++) {
+        raw.table[i].inUse = false;
+        raw.table[i].sector = 0;
+        raw.table[i].sector = 0;
+        memset(raw.table[i].name, 0, FILE_NAME_MAX_LEN + 1);
+        raw.table[i].isDirectory = false;
+    }
     file->ReadAt((char *) raw.table,
                  raw.tableSize * sizeof (DirectoryEntry), sizeof(unsigned));
 }
@@ -77,9 +88,11 @@ Directory::WriteBack(OpenFile *file)
 {
     ASSERT(file != nullptr);
     unsigned tz = raw.tableSize;
+    
     if(extraEntry != nullptr) raw.tableSize++; /// If there is another entry, update tableSize
 
     file->WriteAt((char *) &raw.tableSize, sizeof(unsigned), 0);
+    
     file->WriteAt((char *) raw.table,
                   tz * sizeof (DirectoryEntry), sizeof(unsigned));
     
@@ -88,9 +101,9 @@ Directory::WriteBack(OpenFile *file)
                     tz * sizeof (DirectoryEntry) + sizeof(unsigned));
         delete extraEntry;
         extraEntry = nullptr;
-        synchDisk->WriteSector(DIRECTORY_SECTOR,
+        synchDisk->WriteSector(sector,
                                 (char *) file->GetHeader()->GetRaw()); /// Write back the changes (numBytes) 
-                                                                       /// to the directoy header
+                                                                       /// to the directory header
     }
 }
 
@@ -103,12 +116,13 @@ Directory::FindIndex(const char *name, bool directory)
 {
     ASSERT(name != nullptr);
     ASSERT(strlen(name) != 0);
+    
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if(raw.table[i].inUse){
-            DEBUG('v', "aca hay %s con sector %d \n", raw.table[i].name, raw.table[i].sector);
+            DEBUG('v', "aca hay %s con sector %d, iteracion %d. \n", raw.table[i].name, raw.table[i].sector, i);
         }
         if (raw.table[i].inUse
-              && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN) && raw.table[i].isDirectory == directory) {
+              && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN) && raw.table[i].isDirectory == directory ) {
             return i;
         }
     }
@@ -150,16 +164,16 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
             delete [] path;
             return -1;
         }
-        int sector = raw.table[i].sector; 
+        int sect = raw.table[i].sector; 
         FileHeader *hdr;
-        if(openFileList->HasKey(sector)) {
-            hdr = openFileList->GetByKey(sector);
+        if(openFileList->HasKey(sect)) {
+            hdr = openFileList->GetByKey(sect);
         } else {
             hdr = new FileHeader;
-            hdr->FetchFrom(sector);
-            openFileList->AppendKey(hdr, sector);
+            hdr->FetchFrom(sect);
+            openFileList->AppendKey(hdr, sect);
         }
-        OpenFile *dir = new OpenFile(sector, hdr);
+        OpenFile *dir = new OpenFile(sect, hdr);
         Directory *d = new Directory(1);
         d->FetchFrom(dir);
         char *rest = &(path[strlen(str)+1]);
@@ -197,7 +211,7 @@ Directory::Add(const char *name, int newSector, bool directory)
         }
     }
 
-    ///> If there isn´t no more space, we store ir in the temporaly variable
+    ///> If there isn´t no more space, we store it in the temporaly variable
     ///> until the write back instruccion.
     DEBUG('b', "Expanding directory for file %s\n", name);
     extraEntry = new DirectoryEntry;

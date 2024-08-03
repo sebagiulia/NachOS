@@ -52,8 +52,12 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
     removed = false;
     hdrLock = new Lock("File header lock");
     processesReferencing = 0;
+    
+    //> Initialize raw
     raw.numBytes = fileSize;
     raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
+    for(unsigned i = 0; i < NUM_DIRECT + 1; i++)
+        raw.dataSectors[i] = 0; 
 
     unsigned numDirectBlocks = raw.numSectors;
     unsigned numExtraHeaders = 0;    unsigned doublyHeader = 0;
@@ -104,6 +108,8 @@ FileHeader::AllocateExtraHeaders(Bitmap *freeMap, unsigned numExtraHeaders, unsi
     processesReferencing = 0;
     raw.numBytes = restSize;
     raw.numSectors = numExtraHeaders;
+    for(unsigned i = 0; i < NUM_DIRECT + 1; i++)
+        raw.dataSectors[i] = 0;
     
     unsigned restBytes = raw.numBytes;
     for(unsigned i = 0; i < numExtraHeaders; i++) {
