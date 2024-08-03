@@ -33,10 +33,10 @@ main(void)
     int w = Write(buf, 100, hola);
     if(w == -1) putstr("Error: no se pudo escribir en Hola");
 
-    char buf2[1000];
+    char buf2[100];
     Join(t1);
     Join(t2);
-    int r = Read(buf2, 1000, mundo);
+    int r = Read(buf2, 100, mundo);
     if(r > 0) {
         putstr("Success: Archivo leido.");
         itoa(r, rc);
