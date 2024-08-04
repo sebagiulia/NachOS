@@ -2,7 +2,8 @@
 #include "lib.c"
 
 int main(void){
-    putstr("Hola\n");
+    putstr("a\n");
+    /*
     putstr("Hola2\n");
     putstr("Hola3\n");
     putstr("Hola4\n");
@@ -17,5 +18,6 @@ int main(void){
     putstr("Hola13\n");
     putstr("Hola14\n");
     putstr("Hola15\n");
+    */
     Exit(0);
 }

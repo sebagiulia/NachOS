@@ -429,7 +429,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
     } else { ///> Remove called from ~OpenFile 
     #ifdef FILESYS
         if(hdr->removed == true) {
-            DEBUG('f', "Removing file after last close.\n");
+            DEBUG('v', "Removing file after last close.\n");
             /// If file was removed before, the file is removed from disk too.
             Bitmap *freeMap = new Bitmap(NUM_SECTORS);
             freeMap->FetchFrom(freeMapFile);

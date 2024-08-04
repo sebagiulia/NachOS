@@ -21,6 +21,7 @@ main(void)
     while(r < 1) {
         r = Read(buf, 100, hola);
         putstr("leyendo a hola");
+        for(int i = 0; i < 100000; i++);
     }
     if(strlen(buf) == 99) {
         putstr("Success: Se leyo Hola correctamente:");
