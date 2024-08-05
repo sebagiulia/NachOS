@@ -14,7 +14,6 @@
 
 #include "utility.hh"
 
-
 /// The following class defines a “list element” -- which is used to keep
 /// track of one item on a list.
 ///
@@ -364,7 +363,6 @@ template <class Item>
 Item
 List<Item>::GetByKey(int key)
 {
-
     for (ListNode *ptr = first; ptr != nullptr; ptr = ptr->next) {
         if (key == ptr->key) {
             return ptr->item;

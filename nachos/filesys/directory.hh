@@ -72,9 +72,12 @@ public:
     /// Find the index into the directory table corresponding to `name`.
     int FindIndex(const char *name, bool directory = false);
 
+    void TakeLock();
+
+    void ReleaseLock();
+    
     unsigned sector;
 private:
-
     RawDirectory raw;
     DirectoryEntry *extraEntry; ///> Used to store temporaly a directory entry
 };

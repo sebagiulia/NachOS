@@ -43,6 +43,18 @@ public:
     /// Apply function to every item in the list.
     void Apply(void (*func)(Item));
 
+     /// Put item,key at the end of the list 
+    void AppendKey(Item item, int key);
+
+    /// Does the list have some key?
+    bool HasKey(int key);
+
+    /// Return item with key of the list.
+    Item GetByKey(int key);
+
+    /// Remove item with key of the list.
+    void RemoveByKey(int key);
+
 private:
 
     // The unsynchronized list.
@@ -126,6 +138,40 @@ SynchList<Item>::Apply(void (*func)(Item))
     ASSERT(func != nullptr);
     lock->Acquire();
     list->Apply(func);
+    lock->Release();
+}
+
+template <class Item>
+void 
+SynchList<Item>::AppendKey(Item item, int key) {
+    lock->Acquire();
+    list->AppendKey(item,key);
+    lock->Release();
+}
+
+template <class Item>
+bool 
+SynchList<Item>::HasKey(int key){
+    lock->Acquire();
+    bool ret = list->HasKey(key);
+    lock->Release();
+    return ret;
+}
+
+template <class Item>
+Item 
+SynchList<Item>::GetByKey(int key){
+    lock->Acquire();
+    Item ret = list->GetByKey(key);;
+    lock->Release();
+    return ret;
+}
+
+template <class Item>
+void
+SynchList<Item>::RemoveByKey(int key){
+    lock->Acquire();
+    list->RemoveByKey(key);
     lock->Release();
 }
 

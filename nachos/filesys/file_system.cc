@@ -47,11 +47,11 @@
 #include "file_header.hh"
 #include "lib/bitmap.hh"
 #include "threads/system.hh"
-
+#include "system.hh"
 #include <stdio.h>
 #include <string.h>
 
-
+extern Lock **locksSector;
 /// Sectors containing the file headers for the bitmap of free sectors
 /// These file header are placed in well-known
 /// sectors, so that they can be located on boot-up.
@@ -68,7 +68,6 @@ static const unsigned FREE_MAP_SECTOR = 0;
 /// * `format` -- should we initialize the disk?
 FileSystem::FileSystem(bool format)
 {
-    lockFS = new Lock("File System Lock");
     DEBUG('f', "Initializing the file system.\n");
     if (format) {
         Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
@@ -136,7 +135,6 @@ FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
-    delete lockFS;
 }
 
 void
@@ -181,6 +179,7 @@ FileSystem::ChangeDirectory(const char *name){
 bool
 FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
 {
+    
     //create(hola/pepe/hola.txt,0) -> create(pepe/hola.txt,0,hola) -> create(hola.txt,0,hola/pepe)
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
@@ -208,6 +207,7 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
         d = new OpenFile(dirsector, hdr);
         dir->FetchFrom(d);
     }
+    
     bool success = true;
     if (dirsector == -1 && dir->Find(name) != -1) {
         DEBUG('f', "Can't create file %s, already in directory\n", name);
@@ -395,7 +395,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
             if(openFileList->HasKey(sector)) { 
                 ///> If the file is still opened by other process we do not remove it from disk yet
                 ///> but we mark it with [removed] and remove its name from the directory.
-                DEBUG('f', "Remove requested by %s but file %s still opened by "
+                DEBUG('h', "Remove requested by %s but file %s still opened by "
                             "other processes, removing from directory.\n", currentThread->GetName(), name);
                 fileH = openFileList->GetByKey(sector);
                 fileH->removed = true;
@@ -405,7 +405,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         #endif
 
         if(fileH == nullptr) { // File no opened, we remove from disk and directory
-            DEBUG('f', "Removing file %s from disk.\n", name);
+            DEBUG('h', "Removing file %s from disk.\n", name);
             
             fileH = new FileHeader;
             fileH->FetchFrom(sector);
@@ -429,7 +429,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
     } else { ///> Remove called from ~OpenFile 
     #ifdef FILESYS
         if(hdr->removed == true) {
-            DEBUG('v', "Removing file after last close.\n");
+            DEBUG('h', "Removing file after last close.\n");
             /// If file was removed before, the file is removed from disk too.
             Bitmap *freeMap = new Bitmap(NUM_SECTORS);
             freeMap->FetchFrom(freeMapFile);
@@ -442,7 +442,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         } else {
             hdr->WriteBack(hsector);
         }
-        DEBUG('u', "Queriendo sacar sector %d\n",hsector);
+        DEBUG('h', "Queriendo sacar sector %d\n",hsector);
         ASSERT(openFileList->HasKey(hsector));
         openFileList->RemoveByKey(hsector);
         delete hdr;
@@ -724,4 +724,14 @@ void
 FileSystem::ReleaseLock() { 
     if(lockFS->IsHeldByCurrentThread()) /// Prevent double release
         lockFS->Release();
+}
+
+Lock *
+FileSystem::GetLock(int sector) {
+    TakeLock();
+    if(locksSector[sector] == nullptr){
+        locksSector[sector] = new Lock("Directory lock");
+    }
+    ReleaseLock();
+    return locksSector[sector];
 }

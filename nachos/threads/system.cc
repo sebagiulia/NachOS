@@ -7,7 +7,6 @@
 
 
 #include "system.hh"
-
 #ifdef USER_PROGRAM
 #include "userprog/debugger.hh"
 #include "userprog/exception.hh"
@@ -33,11 +32,13 @@ Timer *timer;                 ///< The hardware timer device, for invoking
 
 #ifdef FILESYS_NEEDED
 FileSystem *fileSystem;
+Lock *lockFS;
+Lock **locksSector;
 #endif
 
 #ifdef FILESYS
 SynchDisk *synchDisk;
-List<FileHeader *> *openFileList;
+SynchList<FileHeader *> *openFileList;
 #endif
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
@@ -215,10 +216,13 @@ Initialize(int argc, char **argv)
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
-    openFileList = new List<FileHeader *>();
+    openFileList = new SynchList<FileHeader *>();
 #endif
 
 #ifdef FILESYS_NEEDED
+    lockFS = new Lock("File System lock");
+    locksSector = new Lock* [NUM_SECTORS];
+    for(unsigned int i = 0; i < NUM_SECTORS; i++) locksSector[i] = nullptr;
     fileSystem = new FileSystem(format);
 #endif
 
@@ -239,6 +243,11 @@ Cleanup()
 
 #ifdef FILESYS_NEEDED
     delete fileSystem;
+    delete lockFS;
+    for(unsigned int i = 0; i < NUM_SECTORS; i++){
+        if (locksSector[i] != nullptr) delete locksSector[i];
+    }
+    delete [] locksSector;
 #endif
 
 #ifdef FILESYS

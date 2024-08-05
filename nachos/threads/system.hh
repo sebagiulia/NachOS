@@ -10,6 +10,7 @@
 
 
 #include "thread.hh"
+#include "synch_list.hh"
 #include "scheduler.hh"
 #include "lib/utility.hh"
 #include "machine/interrupt.hh"
@@ -44,12 +45,14 @@ extern Table<Thread *> *processesTable;
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
 #include "filesys/file_system.hh"
 extern FileSystem *fileSystem;
+extern Lock *lockFS;   
+
 #endif
 
 #ifdef FILESYS
 #include "filesys/synch_disk.hh"
 extern SynchDisk *synchDisk;
-extern List<FileHeader *> *openFileList;
+extern SynchList<FileHeader *> *openFileList;
 #endif
 
 #endif

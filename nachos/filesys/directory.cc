@@ -64,6 +64,7 @@ void
 Directory::FetchFrom(OpenFile *file)
 {
     ASSERT(file != nullptr);
+    TakeLock();
     file->ReadAt((char *) &raw.tableSize, sizeof(unsigned), 0);
     
     /// Maybe the raw.table is smaller than the disk version, we resize it.
@@ -78,7 +79,9 @@ Directory::FetchFrom(OpenFile *file)
     }
     file->ReadAt((char *) raw.table,
                  raw.tableSize * sizeof (DirectoryEntry), sizeof(unsigned));
+    ReleaseLock();
 }
+
 
 /// Write any modifications to the directory back to disk.
 ///
@@ -87,6 +90,7 @@ void
 Directory::WriteBack(OpenFile *file)
 {
     ASSERT(file != nullptr);
+    TakeLock();
     unsigned tz = raw.tableSize;
     
     if(extraEntry != nullptr) raw.tableSize++; /// If there is another entry, update tableSize
@@ -105,6 +109,7 @@ Directory::WriteBack(OpenFile *file)
                                 (char *) file->GetHeader()->GetRaw()); /// Write back the changes (numBytes) 
                                                                        /// to the directory header
     }
+    ReleaseLock();
 }
 
 /// Look up file name in directory, and return its location in the table of
@@ -116,16 +121,18 @@ Directory::FindIndex(const char *name, bool directory)
 {
     ASSERT(name != nullptr);
     ASSERT(strlen(name) != 0);
-    
+    TakeLock();
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if(raw.table[i].inUse){
             DEBUG('v', "aca hay %s con sector %d, iteracion %d. \n", raw.table[i].name, raw.table[i].sector, i);
         }
         if (raw.table[i].inUse
               && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN) && raw.table[i].isDirectory == directory ) {
+            ReleaseLock();
             return i;
         }
     }
+    ReleaseLock();
     return -1;  // name not in directory
 }
 
@@ -196,7 +203,7 @@ bool
 Directory::Add(const char *name, int newSector, bool directory)
 {
     ASSERT(name != nullptr);
-
+    TakeLock();
     if (FindIndex(name) != -1) {
         return false;
     }
@@ -207,6 +214,7 @@ Directory::Add(const char *name, int newSector, bool directory)
             raw.table[i].isDirectory = directory;
             strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
             raw.table[i].sector = newSector;
+            ReleaseLock();
             return true;
         }
     }
@@ -219,6 +227,7 @@ Directory::Add(const char *name, int newSector, bool directory)
     extraEntry->sector = newSector;
     extraEntry->isDirectory = directory;
     strncpy(extraEntry->name, name, FILE_NAME_MAX_LEN);
+    ReleaseLock();
     return true;
 }
 
@@ -231,11 +240,14 @@ Directory::Remove(const char *name)
 {
     ASSERT(name != nullptr);
 
+    TakeLock();
     int i = FindIndex(name);
     if (i == -1) {
+        ReleaseLock();
         return false;  // name not in directory
     }
     raw.table[i].inUse = false;
+    ReleaseLock();
     return true;
 }
 
@@ -276,4 +288,18 @@ const RawDirectory *
 Directory::GetRaw() const
 {
     return &raw;
+}
+
+void 
+Directory::TakeLock(){
+    Lock *lock = fileSystem->GetLock(sector);
+    if(!lock->IsHeldByCurrentThread()) /// Prevent double acquire
+        lock->Acquire();
+}
+
+void 
+Directory::ReleaseLock(){
+    Lock *lock = fileSystem->GetLock(sector);
+    if(lock->IsHeldByCurrentThread()) /// Prevent double release
+        lock->Release();
 }
