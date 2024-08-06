@@ -74,6 +74,12 @@ FileSystem::FileSystem(bool format)
 
         DEBUG('f', "Formatting the file system.\n");
 
+        char buf[SECTOR_SIZE];
+        memset(buf, 0, SECTOR_SIZE);
+        for(unsigned i = 0; i < NUM_DIRECT; i++) {
+            synchDisk->WriteSector(i, buf);
+        }
+
         // First, allocate space for FileHeaders for the directory and bitmap
         // (make sure no one else grabs these!)
         freeMap->Mark(FREE_MAP_SECTOR);
@@ -738,6 +744,7 @@ FileSystem::GetDirectoryFile() {
 
 void
 FileSystem::TakeLock() {
+
     if(!lockFS->IsHeldByCurrentThread()) /// Prevent double acquire
         lockFS->Acquire();
 }
