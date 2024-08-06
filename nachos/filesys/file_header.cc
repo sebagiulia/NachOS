@@ -345,7 +345,8 @@ FileHeader::AddSector() {
     if(raw.numSectors + 1 > MAX_FILE_SIZE) ///> No sector available 
         return false; 
     
-    fileSystem->TakeLock();
+    //fileSystem->TakeLock();
+    TakeLock();
     Bitmap *freeMap = new Bitmap(NUM_SECTORS);
     freeMap->FetchFrom(fileSystem->GetFreeMapFile());
     unsigned clear = freeMap->CountClear();
@@ -372,7 +373,6 @@ FileHeader::AddSector() {
 
             if(doubIndSectHeader->GetRaw()->numSectors == NUM_DIRECT + 1 && clear < 2) { 
                 ReleaseLock();
-                fileSystem->ReleaseLock();
                 delete doubIndSectHeader;
                 delete freeMap;
                 return false; ///> No available sectors
@@ -409,14 +409,13 @@ FileHeader::AddSector() {
 
     } else { ///> No available sectors
         ReleaseLock();
-        fileSystem->ReleaseLock();
         delete freeMap;
         return false;
     }
 
     IncrementNumSectors();
     freeMap->WriteBack(fileSystem->GetFreeMapFile());
-    fileSystem->ReleaseLock();
+    ReleaseLock();
     return true; 
 }
 

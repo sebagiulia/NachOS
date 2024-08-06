@@ -194,6 +194,9 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
     else{
         dir = new Directory(NUM_DIR_ENTRIES, dirsector);
         FileHeader *hdr = nullptr;
+        Lock *l = fileSystem->GetLock(dirsector);
+        if(!l->IsHeldByCurrentThread())
+            l->Acquire();
         if(openFileList->HasKey(dirsector)) {
             hdr = openFileList->GetByKey(dirsector);
         } else {
@@ -203,6 +206,8 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
         }
         d = new OpenFile(dirsector, hdr);
         dir->FetchFrom(d);
+        if(l->IsHeldByCurrentThread())
+            l->Release();
     }
     
     bool success = true;
@@ -303,10 +308,12 @@ FileSystem::Open(const char *name)
     int sector = dir->Find(name);
     if (sector >= 0) {
         FileHeader *hdr = nullptr;
-
         ///> If the file was opened by other process, 
         ///> the file header is shared.
         #ifdef FILESYS
+        Lock *l = fileSystem->GetLock(sector);
+        if(!l->IsHeldByCurrentThread())
+            l->Acquire();
         if(openFileList->HasKey(sector)) {
             hdr = openFileList->GetByKey(sector);
         } else {
@@ -321,6 +328,8 @@ FileSystem::Open(const char *name)
         }
         #endif
         openFile = new OpenFile(sector, hdr);  // `name` was found in directory.
+        if(l->IsHeldByCurrentThread())
+            l->Release();
     } else {
         DEBUG('f', "File %s not found\n", name);
     }
@@ -366,6 +375,9 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
                 delete dir;
                 return false;  // file not found
             }
+            Lock *l = GetLock(headersector);
+            if(!l->IsHeldByCurrentThread())
+                l->Acquire();
             FileHeader *hdr1;
             if(openFileList->HasKey(headersector)) {
                 hdr1 = openFileList->GetByKey(headersector);
@@ -378,6 +390,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
             }
             d = new OpenFile(headersector, hdr1);
             dir->FetchFrom(d);
+            if(l->IsHeldByCurrentThread())
+                l->Release();
             path = &(path[strlen(path)+1]);
         }
         int sector = dir->Find(path);
@@ -389,6 +403,9 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
 
         FileHeader *fileH = nullptr;
         #ifdef FILESYS
+            Lock *l = fileSystem->GetLock(sector);
+            if(!l->IsHeldByCurrentThread())
+                l->Acquire();
             if(openFileList->HasKey(sector)) { 
                 ///> If the file is still opened by other process we do not remove it from disk yet
                 ///> but we mark it with [removed] and remove its name from the directory.
@@ -399,6 +416,8 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
                 dir->Remove(path);
                 dir->WriteBack(d);    // Flush to disk.   
             }
+            if(l->IsHeldByCurrentThread())
+                l->Release(); 
         #endif
 
         if(fileH == nullptr) { // File no opened, we remove from disk and directory
@@ -442,6 +461,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         DEBUG('h', "Queriendo sacar sector %d\n",hsector);
         ASSERT(openFileList->HasKey(hsector));
         openFileList->RemoveByKey(hsector);
+        hdr->ReleaseLock();
         delete hdr;
     #endif
     }
@@ -467,6 +487,9 @@ FileSystem::List(char *name)
         }
         else{
             FileHeader *hdr = nullptr;
+            Lock *l = fileSystem->GetLock(sector);
+            if(!l->IsHeldByCurrentThread())
+                l->Acquire();
             if(openFileList->HasKey(sector)) {
                 hdr = openFileList->GetByKey(sector);
         } else {
@@ -476,6 +499,8 @@ FileSystem::List(char *name)
         }
         OpenFile *d = new OpenFile(sector, hdr);
         dir->FetchFrom(d);
+        if(l->IsHeldByCurrentThread())
+            l->Release(); 
         dir->List();
         delete d;
         }

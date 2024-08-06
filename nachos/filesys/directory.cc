@@ -172,7 +172,10 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
             delete [] path;
             return -1;
         }
-        int sect = raw.table[i].sector; 
+        int sect = raw.table[i].sector;
+        Lock *l = fileSystem->GetLock(sector);
+        if(!l->IsHeldByCurrentThread())
+            l->Acquire(); 
         FileHeader *hdr;
         if(openFileList->HasKey(sect)) {
             hdr = openFileList->GetByKey(sect);
@@ -184,6 +187,8 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
         OpenFile *dir = new OpenFile(sect, hdr);
         Directory *d = new Directory(1);
         d->FetchFrom(dir);
+        if(l->IsHeldByCurrentThread())
+            l->Release(); 
         char *rest = &(path[strlen(str)+1]);
         i = d->Find(rest,directory);
         delete d;
