@@ -173,7 +173,7 @@ Directory::Find(const char *name, bool directory) // hola/pepe/hola.txt --> hola
             return -1;
         }
         int sect = raw.table[i].sector;
-        Lock *l = fileSystem->GetLock(sector);
+        Lock *l = fileSystem->GetLock(sect);
         if(!l->IsHeldByCurrentThread())
             l->Acquire(); 
         FileHeader *hdr;
