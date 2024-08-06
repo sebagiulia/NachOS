@@ -183,7 +183,7 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
 
     DEBUG('v', "Creating file %s, size %u\n", name, initialSize);
 
-    TakeLock();
+    //TakeLock();
     OpenFile *d = nullptr;
     Directory *dir = nullptr;
     if(dirsector == -1){
@@ -276,7 +276,7 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
         delete [] path;
         delete [] str;
     }
-    ReleaseLock();
+    //ReleaseLock();
     delete dir;
     if(dirsector != -1) delete d;
     return success;
@@ -294,7 +294,7 @@ FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
 
-    TakeLock();
+    //TakeLock();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     OpenFile  *openFile = nullptr;
 
@@ -324,7 +324,7 @@ FileSystem::Open(const char *name)
     } else {
         DEBUG('f', "File %s not found\n", name);
     }
-    ReleaseLock();
+    //ReleaseLock();
     delete dir;
     return openFile;  // Return null if not found.
 }
@@ -344,7 +344,7 @@ FileSystem::Open(const char *name)
 bool
 FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
 {
-    TakeLock();
+    //TakeLock();
     if(hdr == nullptr) { ///> Remove called from FileSystem  
         ASSERT(name != nullptr);
         Directory *dir = new Directory(NUM_DIR_ENTRIES);
@@ -445,7 +445,7 @@ FileSystem::Remove(const char *name, FileHeader *hdr, int hsector)
         delete hdr;
     #endif
     }
-    ReleaseLock();
+    //ReleaseLock();
     return true;
 
 }
@@ -455,7 +455,7 @@ void
 FileSystem::List(char *name)
 {
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    TakeLock();
+    //TakeLock();
     dir->FetchFrom(directoryFile);
     if(name == nullptr){
         dir->List();
@@ -480,7 +480,7 @@ FileSystem::List(char *name)
         delete d;
         }
     }
-    ReleaseLock();
+    //ReleaseLock();
     delete dir;
 }
 
@@ -609,7 +609,7 @@ CheckDirectory(const RawDirectory *rd, Bitmap *shadowMap)
 bool
 FileSystem::Check()
 {
-    TakeLock();
+    //TakeLock();
     DEBUG('f', "Performing filesystem check\n");
     bool error = false;
 
@@ -658,7 +658,7 @@ FileSystem::Check()
     DEBUG('f', error ? "Filesystem check failed.\n"
                      : "Filesystem check succeeded.\n");
 
-    ReleaseLock();
+    //ReleaseLock();
     return !error;
 }
 
@@ -676,7 +676,7 @@ FileSystem::Print()
     Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
     Directory  *dir     = new Directory(NUM_DIR_ENTRIES);
 
-    TakeLock();
+    //TakeLock();
     printf("--------------------------------\n");
     bitH->FetchFrom(FREE_MAP_SECTOR);
     bitH->Print("Bitmap");
@@ -693,12 +693,12 @@ FileSystem::Print()
     dir->FetchFrom(directoryFile);
     dir->Print();
     printf("--------------------------------\n");
-    ReleaseLock();
+    //ReleaseLock();
 
-    delete bitH;
-    delete dirH;
     delete freeMap;
     delete dir;
+    delete dirH;
+    delete bitH;
 }
 
 OpenFile *
@@ -725,10 +725,10 @@ FileSystem::ReleaseLock() {
 
 Lock *
 FileSystem::GetLock(int sector) {
-    //TakeLock();
+    TakeLock();
     if(locksSector[sector] == nullptr){
         locksSector[sector] = new Lock("Directory lock");
     }
-    //ReleaseLock();
+    ReleaseLock();
     return locksSector[sector];
 }

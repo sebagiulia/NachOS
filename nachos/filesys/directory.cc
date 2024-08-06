@@ -54,6 +54,7 @@ Directory::Directory(unsigned size, unsigned sect)
 /// De-allocate directory data structure.
 Directory::~Directory()
 {
+    ReleaseLock();
     delete [] raw.table;
 }
 
@@ -79,7 +80,7 @@ Directory::FetchFrom(OpenFile *file)
     }
     file->ReadAt((char *) raw.table,
                  raw.tableSize * sizeof (DirectoryEntry), sizeof(unsigned));
-    ReleaseLock();
+    //ReleaseLock();
 }
 
 
@@ -90,7 +91,7 @@ void
 Directory::WriteBack(OpenFile *file)
 {
     ASSERT(file != nullptr);
-    TakeLock();
+    //TakeLock();
     unsigned tz = raw.tableSize;
     
     if(extraEntry != nullptr) raw.tableSize++; /// If there is another entry, update tableSize

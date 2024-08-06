@@ -32,11 +32,11 @@ OpenFile::OpenFile(int sector, FileHeader *fhdr)
 
     } else { ///> file opened by some process
         hdr = fhdr;
-        fileSystem->TakeLock();
+        hdr->TakeLock();
         DEBUG('h', "Llamaron al cosntructor de fileheader con %d procesos header %d\n",hdr->ProcessesReferencing(), sector);
         hdr->IncrementProcessesRefNumber();
         sectorhdr = sector;
-        fileSystem->ReleaseLock();
+        hdr->ReleaseLock();
     }
     seekPosition = 0;
 }
@@ -49,7 +49,7 @@ OpenFile::~OpenFile()
     else{
         DEBUG('h', "Llamaron al destructor de fileheader con %d procesos sectorheader %d\n",hdr->ProcessesReferencing(), sectorhdr);
         #ifdef FILESYS
-        fileSystem->TakeLock();
+        hdr->TakeLock();
         hdr->DecrementProcessesRefNumber();
         if(!openFileList->HasKey(sectorhdr)){
             return;
@@ -57,8 +57,9 @@ OpenFile::~OpenFile()
         if(hdr->ProcessesReferencing() == 0) { /// this is the last reference to the file in memory.
             DEBUG('h',"llamando remove desde el destructor de openfile\n");
             fileSystem->Remove(nullptr, hdr, sectorhdr);
+        } else {
+            hdr->ReleaseLock();
         }
-        fileSystem->ReleaseLock();
         #endif
     }
      ///else -> there are processes that still reference this file, so we do not remove data structure
