@@ -52,10 +52,7 @@
 #include <string.h>
 
 extern Lock **locksSector;
-/// Sectors containing the file headers for the bitmap of free sectors
-/// These file header are placed in well-known
-/// sectors, so that they can be located on boot-up.
-static const unsigned FREE_MAP_SECTOR = 0;
+
 
 /// Initialize the file system.  If `format == true`, the disk has nothing on
 /// it, and we need to initialize the disk to contain an empty directory, and
@@ -85,8 +82,8 @@ FileSystem::FileSystem(bool format)
         // Second, allocate space for the data blocks containing the contents
         // of the directory and bitmap files.  There better be enough space!
 
-        ASSERT(mapH->Allocate(freeMap, FREE_MAP_FILE_SIZE));
-        ASSERT(dirH->Allocate(freeMap, DIRECTORY_FILE_SIZE));
+        ASSERT(mapH->Allocate(freeMap, FREE_MAP_FILE_SIZE, NUM_DIRECT, FREE_MAP_SECTOR));
+        ASSERT(dirH->Allocate(freeMap, DIRECTORY_FILE_SIZE, NUM_DIRECT, DIRECTORY_SECTOR));
 
         // Flush the bitmap and directory `FileHeader`s back to disk.
         // We need to do this before we can `Open` the file, since open reads
@@ -240,7 +237,7 @@ FileSystem::Create(const char *name, unsigned initialSize, int dirsector)
                 success = false;  // No space in directory.
             } else {
                 FileHeader *h = new FileHeader;
-                success = h->Allocate(freeMap, directory ? 0 : initialSize);
+                success = h->Allocate(freeMap, directory ? 0 : initialSize, NUM_DIRECT, sector);
                 // Fails if no space on disk for data.
                 if (success) {
                     // Everything worked, flush all changes back to disk.
@@ -728,10 +725,10 @@ FileSystem::ReleaseLock() {
 
 Lock *
 FileSystem::GetLock(int sector) {
-    TakeLock();
+    //TakeLock();
     if(locksSector[sector] == nullptr){
         locksSector[sector] = new Lock("Directory lock");
     }
-    ReleaseLock();
+    //ReleaseLock();
     return locksSector[sector];
 }

@@ -32,12 +32,12 @@ Timer *timer;                 ///< The hardware timer device, for invoking
 
 #ifdef FILESYS_NEEDED
 FileSystem *fileSystem;
-Lock *lockFS;
-Lock **locksSector;
 #endif
 
 #ifdef FILESYS
 SynchDisk *synchDisk;
+Lock **locksSector;
+Lock *lockFS;
 SynchList<FileHeader *> *openFileList;
 #endif
 
@@ -216,13 +216,13 @@ Initialize(int argc, char **argv)
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
+    lockFS = new Lock("File System lock");
+    locksSector = new Lock* [NUM_SECTORS];
+    for(unsigned int i = 0; i < NUM_SECTORS; i++) locksSector[i] = nullptr;
     openFileList = new SynchList<FileHeader *>();
 #endif
 
 #ifdef FILESYS_NEEDED
-    lockFS = new Lock("File System lock");
-    locksSector = new Lock* [NUM_SECTORS];
-    for(unsigned int i = 0; i < NUM_SECTORS; i++) locksSector[i] = nullptr;
     fileSystem = new FileSystem(format);
 #endif
 
@@ -243,14 +243,15 @@ Cleanup()
 
 #ifdef FILESYS_NEEDED
     delete fileSystem;
-    delete lockFS;
+#endif
+
+#ifdef FILESYS
     for(unsigned int i = 0; i < NUM_SECTORS; i++){
         if (locksSector[i] != nullptr) delete locksSector[i];
     }
     delete [] locksSector;
-#endif
-
-#ifdef FILESYS
+    delete openFileList;
+    delete lockFS;
     delete synchDisk;
 #endif
 

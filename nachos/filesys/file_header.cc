@@ -37,7 +37,7 @@
 /// * `fileSize` is the bit map of free disk sectors.
 /// * `maxDirectBlocks` is the number of direct sectors that de header must support (Default: NUM_DIRECT)
 bool
-FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlocks)
+FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlocks, int sector)
 {
     ASSERT(freeMap != nullptr);
     ASSERT(maxDirectBlocks <= sizeof(RawFileHeader) - 2); ///> dataSectors size should be greater or equal.
@@ -49,8 +49,8 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
     }
 
     ///> Initialize class variables.
+    hsector = sector;
     removed = false;
-    hdrLock = new Lock("File header lock");
     processesReferencing = 0;
     
     //> Initialize raw
@@ -92,7 +92,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
     ///> Create the doubly-indiretion header and every extra header inside 
     ///> until store every sector of the file. 
     FileHeader *sh = new FileHeader;
-    sh->AllocateExtraHeaders(freeMap, numExtraHeaders, raw.numBytes - maxDirectBlocks * SECTOR_SIZE);
+    sh->AllocateExtraHeaders(freeMap, numExtraHeaders, raw.numBytes - maxDirectBlocks * SECTOR_SIZE, doublyHeaderSector);
     sh->WriteBack(doublyHeaderSector);
     delete sh;
     raw.dataSectors[maxDirectBlocks] = doublyHeaderSector; ///> doubly-indirection block.
@@ -100,11 +100,12 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize, unsigned maxDirectBlock
 }
 
 void
-FileHeader::AllocateExtraHeaders(Bitmap *freeMap, unsigned numExtraHeaders, unsigned restSize) {
+FileHeader::AllocateExtraHeaders(Bitmap *freeMap, unsigned numExtraHeaders, unsigned restSize, int sect) {
     
     ///> Initialize every class variable.
+    
+    hsector = sect;
     removed = false;
-    hdrLock = new Lock("File header lock");
     processesReferencing = 0;
     raw.numBytes = restSize;
     raw.numSectors = numExtraHeaders;
@@ -121,7 +122,7 @@ FileHeader::AllocateExtraHeaders(Bitmap *freeMap, unsigned numExtraHeaders, unsi
             size = restBytes;
         else
             restBytes -= size;
-        h->Allocate(freeMap, size, NUM_DIRECT + 1);
+        h->Allocate(freeMap, size, NUM_DIRECT + 1, sector);
         h->WriteBack(sector);
         delete h;
         raw.dataSectors[i] = sector;
@@ -169,7 +170,7 @@ FileHeader::DeallocateDirect(Bitmap *freeMap) {
     }
 }
 
-/// Fetch contents of file header from disk, reinitalized [removed] and [hdrLock].
+/// Fetch contents of file header from disk.
 ///
 /// * `sector` is the disk sector containing the file header.
 void
@@ -178,17 +179,15 @@ FileHeader::FetchFrom(unsigned sector)
     synchDisk->ReadSector(sector, (char *) &raw);
     removed = false;
     processesReferencing = 0;
-    hdrLock = new Lock("File header lock");
+    hsector = sector;
 }
 
 /// Write the modified contents of the file header back to disk.
-/// [hdrLock] is not necessary after that.
 /// * `sector` is the disk sector to contain the file header.
 void
 FileHeader::WriteBack(unsigned sector)
 {
     synchDisk->WriteSector(sector, (char *) &raw);
-    //delete hdrLock;
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -360,7 +359,7 @@ FileHeader::AddSector() {
         unsigned doubIndirectSector = freeMap->Find();
 
         FileHeader *doubIndSectHeader = new FileHeader;
-        doubIndSectHeader->AllocateExtraHeaders(freeMap, 1, SECTOR_SIZE);
+        doubIndSectHeader->AllocateExtraHeaders(freeMap, 1, SECTOR_SIZE, doubIndirectSector);
         doubIndSectHeader->WriteBack(doubIndirectSector);
         AppendDataSector(doubIndirectSector);
         delete doubIndSectHeader;
@@ -382,7 +381,7 @@ FileHeader::AddSector() {
             
             unsigned indHeaderSector = freeMap->Find(); ///> indirect header
             FileHeader *indHeader = new FileHeader;
-            indHeader->Allocate(freeMap, SECTOR_SIZE); 
+            indHeader->Allocate(freeMap, SECTOR_SIZE, NUM_DIRECT, indHeaderSector); 
             indHeader->WriteBack(indHeaderSector);
             delete indHeader;
 
@@ -454,12 +453,14 @@ FileHeader::IncrementNumSectors() {
 
 void
 FileHeader::TakeLock() {
-    if(!hdrLock->IsHeldByCurrentThread()) /// Prevent double Acquire
-        hdrLock->Acquire();
+    Lock *lock = fileSystem->GetLock(hsector);
+    if(!lock->IsHeldByCurrentThread()) /// Prevent double release
+        lock->Acquire();
 }
 
 void
 FileHeader::ReleaseLock() {
-    if(hdrLock->IsHeldByCurrentThread()) /// Prevent double Release
-        hdrLock->Release();
+    Lock *lock = fileSystem->GetLock(hsector);
+    if(lock->IsHeldByCurrentThread()) /// Prevent double release
+        lock->Release();
 }

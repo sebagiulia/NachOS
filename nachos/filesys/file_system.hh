@@ -102,6 +102,7 @@ static const unsigned FREE_MAP_FILE_SIZE = NUM_SECTORS / BITS_IN_BYTE;
 static const unsigned NUM_DIR_ENTRIES = 5;
 static const unsigned DIRECTORY_FILE_SIZE
   = sizeof (DirectoryEntry) * NUM_DIR_ENTRIES + sizeof(unsigned);
+static const unsigned FREE_MAP_SECTOR = 0;
 
 
 class Lock;

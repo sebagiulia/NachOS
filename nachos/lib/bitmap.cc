@@ -8,7 +8,9 @@
 
 
 #include "bitmap.hh"
-
+#ifdef FILESYS
+#include "threads/system.hh"
+#endif
 #include <stdio.h>
 
 
@@ -31,6 +33,9 @@ Bitmap::Bitmap(unsigned nitems)
 /// De-allocate a bitmap.
 Bitmap::~Bitmap()
 {
+#ifdef FILESYS
+    BMReleaseLock();
+#endif
     delete [] map;
 }
 
@@ -119,6 +124,9 @@ Bitmap::Print() const
 void
 Bitmap::FetchFrom(OpenFile *file)
 {
+#ifdef FILESYS
+    BMTakeLock();
+#endif
     ASSERT(file != nullptr);
     file->ReadAt((char *) map, numWords * sizeof (unsigned), 0);
 }
@@ -129,8 +137,27 @@ Bitmap::FetchFrom(OpenFile *file)
 ///
 /// * `file` is the place to write the bitmap to.
 void
-Bitmap::WriteBack(OpenFile *file) const
+Bitmap::WriteBack(OpenFile *file)
 {
     ASSERT(file != nullptr);
     file->WriteAt((char *) map, numWords * sizeof (unsigned), 0);
+#ifdef FILESYS
+    BMReleaseLock();
+#endif
 }
+
+#ifdef FILESYS
+void
+Bitmap::BMTakeLock() {
+    Lock *lock = fileSystem->GetLock(FREE_MAP_SECTOR);
+    if(!lock->IsHeldByCurrentThread()) /// Prevent double release
+        lock->Acquire();
+}
+
+void
+Bitmap::BMReleaseLock() {
+    Lock *lock = fileSystem->GetLock(FREE_MAP_SECTOR);
+    if(lock->IsHeldByCurrentThread()) /// Prevent double release
+        lock->Release();
+}
+#endif

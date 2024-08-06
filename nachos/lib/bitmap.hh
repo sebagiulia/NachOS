@@ -21,7 +21,6 @@
 #include "utility.hh"
 #include "filesys/open_file.hh"
 
-
 /// A “bitmap” -- an array of bits, each of which can be independently set,
 /// cleared, and tested.
 ///
@@ -71,8 +70,12 @@ public:
     ///
     /// Note: this is not needed until the *FILESYS* assignment, when we will
     /// need to read and write the bitmap to a file.
-    void WriteBack(OpenFile *file) const;
+    void WriteBack(OpenFile *file);
 
+#ifdef FILESYS
+    void BMTakeLock();
+    void BMReleaseLock();
+#endif
 private:
 
     /// Number of bits in the bitmap.
