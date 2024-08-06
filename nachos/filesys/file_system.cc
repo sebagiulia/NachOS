@@ -76,7 +76,7 @@ FileSystem::FileSystem(bool format)
 
         char buf[SECTOR_SIZE];
         memset(buf, 0, SECTOR_SIZE);
-        for(unsigned i = 0; i < NUM_DIRECT; i++) {
+        for(unsigned i = 0; i < NUM_SECTORS; i++) {
             synchDisk->WriteSector(i, buf);
         }
 
